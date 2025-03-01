@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# VS Code ignores
+.vscode/
+
+.venv
+.env
+
+ai-log.txt
+
+uv.lock
