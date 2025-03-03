@@ -4,6 +4,11 @@ Gem-Assist is a Python-based personal assistant that leverages the power of Goog
 
 A short disclaimer this was originally made to be my personal assistant so it might not be as versatile as you might expect.
 
+<p align="center">
+  <img src="images/gem-assist-demo.gif" alt="Gem-Assist Demo" width="600"/>
+</p>
+
+
 ## Features
 
 *   **Powered by Gemini:** Utilizes the latest Gemini models for natural language understanding and generation. (**Ollama** version is still very early WIP)
@@ -78,7 +83,7 @@ GemFunc comes with a set of built-in tools that you can use in your conversation
 *   **Web Search:** `duckduckgo_search_tool`
 *   **File System:** `list_dir`, `read_file`, `write_files`, `create_directory`, `copy_file`, `move_file`, `rename_file`, `rename_directory`, `get_file_metadata`, `get_directory_size`, `get_multiple_directory_size`
 *   **System:** `get_system_info`, `run_shell_command`, `get_current_time`, `get_current_directory`, `get_drives`, `get_environment_variable`
-*   **Web Interaction:** `get_website_text_content`, `http_get_request`, `open_url`
+*   **Web Interaction:** `get_website_text_content`, `http_get_request`, `open_url`, `download_file_from_url`
 *   **Reddit:** `reddit_search`, `get_reddit_post`, `reddit_submission_comments`
 *   **Utility:** `evaluate_math_expression`, `zip_archive_files`, `zip_extract_files`, `log_note`, `read_log_note`
 
@@ -97,7 +102,8 @@ The project dependencies are managed by UV and listed in `pyproject.toml`. Key d
 ## Known Issues
 
 *   **Web Interaction:**  Web interaction tools may not work as expected due to rate limits and other issues.
-*   **File system** There is a bug with gemini sending large payload in function calling argument, it just fails to parse for some reason, so make sure to not tell it to write large files it might stop because of MALFORMED_FUNCTION_CALL.
+*   **File system:** There is a bug with gemini sending large payload in function calling argument, it just fails to parse for some reason, so make sure to not tell it to write large files it might stop because of MALFORMED_FUNCTION_CALL.
+*   **File download tool:** Might not show progress or filename (if not explicitly provided) correctly if file download endpoint is dynamic
 
 
 ## License

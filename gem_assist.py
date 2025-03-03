@@ -13,6 +13,8 @@ from rich.markdown import Markdown
 
 import config as conf
 from utility import TOOLS
+import platform
+from pprint import pformat
 
 load_dotenv()
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
 
     client = genai.Client(api_key=API_KEY)
 
-    sys_instruct = (conf.SYSTEM_PROMPT + "Here are the things previously saved on your notes:\n" + open("./ai-log.txt").read()).strip()
+    sys_instruct = (conf.get_system_prompt() + "Here are the things previously saved on your notes:\n" + open("./ai-log.txt").read()).strip()
 
 
     tools = TOOLS
@@ -78,19 +80,26 @@ if __name__ == "__main__":
         exit()
 
     chat = client.chats.create(model=conf.MODEL, config=client_config)
-
-    print(f"\n{Back.BLUE}{Fore.WHITE}┌{'─' * 60}┐{Style.RESET_ALL}")
-    print(f"{Back.BLUE}{Fore.WHITE}│{' ' * 18}{conf.NAME} CHAT INTERFACE{' ' * 18}│{Style.RESET_ALL}")
-    print(f"{Back.BLUE}{Fore.WHITE}└{'─' * 60}┘{Style.RESET_ALL}\n")
+    
+    os.system("cls" if platform.system() == "Windows" else "clear")
+    width = 60
+    title = f" {conf.NAME} CHAT INTERFACE "
+    padding = (width - len(title)) // 2
+    
+    print(f"\n{Back.BLUE}{Fore.WHITE}┌{'─' * width}┐{Style.RESET_ALL}")
+    print(f"{Back.BLUE}{Fore.WHITE}│{' ' * padding}{title}{' ' * (width - len(title) - padding)}│{Style.RESET_ALL}")
+    print(f"{Back.BLUE}{Fore.WHITE}└{'─' * width}┘{Style.RESET_ALL}\n")
     
     while True:
         try:
             print(f"{Fore.CYAN}┌{'─' * 58}┐{Style.RESET_ALL}")
             msg = input(f"{Fore.CYAN}│ {Fore.MAGENTA}You:{Style.RESET_ALL} ")
             print(f"{Fore.CYAN}└{'─' * 58}┘{Style.RESET_ALL}")
+            if not msg:
+                continue
             
             if msg.lower() in ['exit', 'quit', 'bye']:
-                print(f"\n{Fore.GREEN}Thank you for using {conf.NAME} Chat.{Style.RESET_ALL}")
+                print(f"\n{Fore.GREEN}Quitting {conf.NAME}...{Style.RESET_ALL}")
                 break
                 
             response = chat.send_message(msg)
@@ -102,9 +111,9 @@ if __name__ == "__main__":
 
             if response.candidates[0].finish_reason != FinishReason.STOP:
                 print(f"{Fore.RED}An error occurred: {response.candidates[0].finish_reason}{Style.RESET_ALL}")
-                with open("fail-logs.txt", "w", encoding="utf-8") as f:
-                    f.write(str(response))
-
+                with open("tool-calling-fail.json", "w", encoding="utf-8") as f:
+                    f.write(pformat(response.model_dump_json()))
+                    
             if response.candidates and response.candidates[0].grounding_metadata and response.candidates[0].grounding_metadata.grounding_chunks:
                 print(f"{Fore.BLUE}┌{'─' * 58}┐{Style.RESET_ALL}")
                 print(f"{Fore.BLUE}│ {Fore.CYAN}Sources:{Style.RESET_ALL}")

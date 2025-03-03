@@ -14,6 +14,7 @@ dependencies = [
     "pillow>=11.1.0",
     "praw>=7.8.1",
     "psutil>=7.0.0",
+    "pypdl>=1.5.2",
     "python-dotenv>=1.0.1",
     "rich>=13.9.4",
     "wmi>=1.5.1",

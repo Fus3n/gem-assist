@@ -1,4 +1,4 @@
-import os
+import os, re
 import datetime
 import platform
 import subprocess
@@ -21,6 +21,15 @@ import colorama
 from colorama import Fore, Style
 from pydantic import BaseModel, Field
 from google.genai.types import FunctionResponse, Image
+from pypdl import Pypdl
+
+from rich.console import Console
+from rich.live import Live
+from rich.panel import Panel
+from rich.progress import BarColumn, Progress, TaskProgressColumn, TimeRemainingColumn
+from rich.text import Text
+
+import config as conf
 
 load_dotenv()
 
@@ -49,8 +58,8 @@ def duckduckgo_search_tool(query: str) -> list:
     print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}duckduckgo_search_tool {Fore.YELLOW}{query}")
     try:
         
-        ddgs = duckduckgo_search.DDGS(timeout=20)
-        results = ddgs.text(query, max_results=6)
+        ddgs = duckduckgo_search.DDGS(timeout=conf.DUCKDUCKGO_TIMEOUT)
+        results = ddgs.text(query, max_results=conf.MAX_DUCKDUCKGO_SEARCH_RESULTS)
         return results
     except Exception as e:
         print(f"{Fore.RED}Error during DuckDuckGo search: {e}{Style.RESET_ALL}")
@@ -341,7 +350,7 @@ def write_files(files_data: list[FileData]) -> dict:
             if nested_dirs:
                 os.makedirs(nested_dirs, exist_ok=True)
 
-            with open(file_data.file_path, 'w') as f:
+            with open(file_data.file_path, 'w', encoding="utf-8") as f:
                 f.write(file_data.content)
             print(f"{Fore.CYAN}  ├─{Style.RESET_ALL} Created ✅: {Fore.YELLOW}{file_data.file_path}")
             results[file_data.file_path] = True
@@ -474,32 +483,49 @@ def get_current_time() -> str:
     print(f"{Fore.GREEN}Current time: {time_str}{Style.RESET_ALL}")
     return time_str
 
-def run_shell_command(command: str) -> str:
+def run_shell_command(command: str, blocking: bool) -> str | None:
     """
     Run a shell command. Use with caution as this can be dangerous.
+    Can be used for command line commands, running programs, opening files using other programs, etc.
 
     Args:
       command: The shell command to execute.
+      blocking: If True, waits for command to complete. If False, runs in background (Default false).
 
-    Returns: The output of the command as a string, or an error message.
+    Returns: 
+      If blocking=True: The output of the command as a string, or an error message.
+      If blocking=False: None (command runs in background)
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}run_shell_command {Fore.YELLOW}{command}")
-    try:
-        # SECURITY WARNING: Be very careful about directly executing shell commands,
-        # especially with user-provided input.  Sanitize and validate thoroughly in
-        # a real application.  Consider using subprocess.run with shell=False and
-        # explicitly listing arguments for better security.
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        stdout, stderr = process.communicate()
-        if stderr:
-            print(f"{Fore.RED}Error running command: {stderr}{Style.RESET_ALL}")
-            return f"Error running command: {stderr}"
-        print(f"{Fore.GREEN}Command executed successfully{Style.RESET_ALL}")
-        return stdout.strip() # remove trailing whitespace
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}run_shell_command(blocking={blocking}) {Fore.YELLOW}{command}")
+    
+    def _run_command():
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            stdout, stderr = process.communicate()
+            if stderr:
+                print(f"{Fore.RED}Error running command: {stderr}{Style.RESET_ALL}")
+                return f"Error running command: {stderr}"
+            print(f"{Fore.GREEN}Command executed successfully{Style.RESET_ALL}")
+            return stdout.strip()  # remove trailing whitespace
 
-    except Exception as e:
-        print(f"{Fore.RED}Error running shell command: {e}{Style.RESET_ALL}")
-        return f"Error running shell command: {e}"
+        except Exception as e:
+            print(f"{Fore.RED}Error running shell command: {e}{Style.RESET_ALL}")
+            return f"Error running shell command: {e}"
+
+    if blocking:
+        return _run_command()
+    else:
+        import threading
+        thread = threading.Thread(target=_run_command)
+        thread.daemon = True  # Thread will exit when main program exits
+        thread.start()
+        return None
 
 def get_system_info() -> str:
     """
@@ -585,7 +611,151 @@ def http_get_request(url: str) -> str:
     except Exception as e:
         print(f"{Fore.RED}Error sending HTTP GET request: {e}{Style.RESET_ALL}")
         return f"Error processing HTTP GET request: {e}"
+
+def to_mb(size):
+    return size / 1024 / 1024
+
+def seconds_to_hms(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return "%d:%02d:%02d" % (h, m, s)
+
+def progress_function(dl: Pypdl):
+    """
+    Prints the progress of the download using Rich library for in-place updates. (not used by AI)
+
+    Args:
+        dl: The Pypdl object.
+    """
+    console = Console()
+    progress = Progress(
+        TaskProgressColumn(),
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.1f}%",
+        "•",
+        TimeRemainingColumn(),
+    )
+
+    task_id = progress.add_task("download", total=dl.size if dl.size else 100) 
+
+    def update_progress():
+        if dl.size:
+            progress.update(task_id, completed=dl.current_size)
+            progress_bar = f"[{'█' * dl.progress}{'·' * (100 - dl.progress)}] {dl.progress}%"
+            info = f"\nSize: {to_mb(dl.current_size):.2f}/{to_mb(dl.size):.2f} MB, Speed: {dl.speed:.2f} MB/s, ETA: {seconds_to_hms(dl.eta)}"
+            status = progress_bar + " " + info
+        else:
+            progress.update(task_id, completed=dl.task_progress)
+            download_stats = f"[{'█' * dl.task_progress}{'·' * (100 - dl.task_progress)}] {dl.task_progress}%" if dl.total_task > 1 else "Downloading..." if dl.task_progress else ""
+            info = f"Downloaded Size: {to_mb(dl.current_size):.2f} MB, Speed: {dl.speed:.2f} MB/s"
+            status = download_stats + " " + info
+
+        return status
+
+    with Live(Panel(Text(update_progress(), justify="left")), console=console, screen=False, redirect_stderr=False, redirect_stdout=False) as live:
+        while not dl.completed:
+            live.update(Panel(Text(update_progress(), justify="left")))
+            import time
+            time.sleep(0.1)
+
+def resolve_filename_from_url(url: str) -> str | None:
+    print(f"{Fore.CYAN}Resolving filename from URL {Fore.YELLOW}{url}")
     
+    try:
+        # filename from the Content-Disposition header
+        response = requests.head(url, allow_redirects=True)
+        response.raise_for_status()  
+        content_disposition = response.headers.get("Content-Disposition")
+        if content_disposition:
+            filename_match = re.search(r"filename\*=UTF-8''([\w\-%.]+)", content_disposition) or re.search(r"filename=\"([\w\-%.]+)\"", content_disposition)
+            if filename_match:
+                return filename_match.group(1)
+
+        # try to extract the filename from the URL path
+        filename = url.split("/")[-1]
+        if filename:
+            # Further refine: remove query parameters from the filename
+            filename = filename.split("?")[0]
+            return filename
+
+        return None  # Filename not found
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error resolving filename from URL: {e}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
+    
+def try_resolve_filename_from_url(url: str) -> tuple[str | None, str | None]:
+    try:
+        filename = resolve_filename_from_url(url)
+        if not filename:
+            return (None, f"{Fore.RED}Error resolving filename from URL: {url}{Style.RESET_ALL}")
+        return (filename, None)
+    except Exception as e:
+        print(f"{Fore.RED}Error resolving filename from URL: {e}{Style.RESET_ALL}")
+        return (None, f"Error resolving filename from URL: {e}")
+
+def download_file_from_url(url: str, download_path: str | None) -> str:
+    """
+    Downloads a file from a URL to the specified filename.
+    Can download unnamed files 
+
+    Args:
+        url: The URL of the file to download.
+        download_path: The path and name to save the downloaded file as. leave as None to resolve filename automatically (default None)
+
+    Example:
+        ```py
+        download_file_from_url("https://example.com/file.txt", "file.txt") # with name
+        download_file_from_url("https://example.com/file?id=123") # without any path cases (downloads in current directory)
+        download_file_from_url("https://example.com/file.txt", "downloads/path/") # without any name (directory with slash)
+        ```
+    Returns:
+        A string indicating the success or failure of the download.
+    """
+    
+    try:
+        url_filename = None
+        if download_path is None:
+            url_filename, error = try_resolve_filename_from_url(url)
+            if error:
+                return error
+            final_path = url_filename  # In current directory
+        else:
+            path_parts = os.path.split(download_path)
+            final_part = path_parts[-1]
+            
+            is_likely_dir = (
+                download_path.endswith('/') or 
+                download_path.endswith('\\') or
+                (os.path.isdir(download_path) if os.path.exists(download_path) else '.' not in final_part)
+            )
+            
+            if is_likely_dir:
+                url_filename, error = try_resolve_filename_from_url(url)
+                if error:
+                    return error
+                final_path = os.path.join(download_path, url_filename)
+            else:
+                final_path = download_path
+        
+        os.makedirs(os.path.dirname(os.path.abspath(final_path)), exist_ok=True)
+            
+        print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}download_file_from_url {Fore.YELLOW}{url} -> {final_path}")
+        
+        dl = Pypdl()
+        dl.start(url, final_path, display=False, block=False)
+        progress_function(dl)
+        return f"File downloaded successfully to {final_path}"
+    except requests.exceptions.RequestException as e:
+        print(f"{Fore.RED}Error downloading file: {e}{Style.RESET_ALL}")
+        return f"Error downloading file: {e}"
+    except Exception as e:
+        print(f"{Fore.RED}Error downloading file: {e}{Style.RESET_ALL}")
+        return f"Error downloading file: {e}"
+
 
 def screenshot() -> FunctionResponse:
     """Takes a screenshot and returns the image"""
@@ -615,7 +785,7 @@ def log_note(message: str):
     with open("ai-log.txt", "a+") as f:
         f.write(message +"\n\n")
 
-def read_log_note(message: str) -> str:
+def read_log_note() -> str:
     """
     Read the previously saved logged notes, (assistant only)
 
@@ -702,7 +872,7 @@ def get_environment_variable(key: str) -> str:
 
 def reddit_search(subreddit: str, query: str, sorting: str) -> dict:
     """
-    Search inside `all` or specific subreddit in reddit to get information, returns first 5 results
+    Search inside `all` or specific subreddit in reddit to get information.
     This function CAN also work WITHOUT a query with just sorting of specific subreddit/s
     just provide the sorting from one of these ['hot', 'top', 'new'] and leave query as empty string
 
@@ -723,7 +893,7 @@ def reddit_search(subreddit: str, query: str, sorting: str) -> dict:
 
     results = []
     subs = []
-    max_results = 5
+    max_results = conf.MAX_REDDIT_SEARCH_RESULTS
     if query:
         subs = reddit.subreddit(subreddit).search(query, limit=max_results, sort=sorting)
     else:
@@ -803,7 +973,8 @@ def reddit_submission_comments(submission_id: str) -> dict:
         return "Submission not found/Invalid ID"
 
     results = []
-    for com in submission.comments.list():
+    comments = submission.comments.list() if conf.MAX_REDDIT_POST_COMMENTS == -1 else submission.comments.list()[:conf.MAX_REDDIT_POST_COMMENTS]
+    for com in comments:
         if isinstance(com, Comment):
             results.append({
                 "author": com.author.name or "N/A",
@@ -835,6 +1006,7 @@ TOOLS = [
     get_website_text_content,
     http_get_request,
     open_url,
+    download_file_from_url,
     get_system_info,
     run_shell_command,
     get_current_time,
