@@ -66,7 +66,7 @@ class OllamaAssistant:
 if __name__ == "__main__":
     colorama.init(autoreset=True)
 
-    sys_instruct = (conf.SYSTEM_PROMPT + "Here are the things previously saved on your notes:\n" + open("./ai-log.txt").read()).strip()
+    sys_instruct = (conf.get_system_prompt() + "Here are the things previously saved on your notes:\n" + open("./ai-log.txt").read()).strip()
 
     MODEL = "phi-4-mini-instruct_Q8"
     

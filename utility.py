@@ -490,7 +490,7 @@ def run_shell_command(command: str, blocking: bool) -> str | None:
 
     Args:
       command: The shell command to execute.
-      blocking: If True, waits for command to complete. If False, runs in background (Default false).
+      blocking: If True, waits for command to complete. If False, runs in background (Default True).
 
     Returns: 
       If blocking=True: The output of the command as a string, or an error message.
@@ -928,10 +928,10 @@ def get_reddit_post(submission_id: str) -> dict:
     Args:
         submission_id: the submission id of the reddit post
         
-    Usage Example: 
-        if you have a link of a subreddit like so: `https://www.reddit.com/r/Python/comments/1iyc8qb/excel_formulas_to_python_code_using_llms/`
-        use the id like: 1iyc8qb
-        so: `reddit_submission_contents("1iyc8qb")`
+    Example: 
+        if you have a link of a subreddit like so: `https://www.reddit.com/r/Python/comments/1122aa/some_reddit_post/`
+        use the id like: 1122aa
+        so: `reddit_submission_contents("1122aa")`
 
     Returns: A JSON data of the comments including authors name and the body of the reddit post
     """
