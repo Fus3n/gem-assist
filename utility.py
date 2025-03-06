@@ -50,7 +50,7 @@ def duckduckgo_search_tool(query: str) -> list:
     Searches DuckDuckGo for the given query and returns a list of results.
 
     Args:
-        query (str): The search query.
+        query: The search query.
 
     Returns:
         list: A list of search results.
@@ -85,10 +85,10 @@ def list_dir(path: str, recursive: bool, files_only: bool, dirs_only: bool) -> l
     and can do so recursively or not.
 
     Args:
-        path (str): The path to the directory.
-        recursive (bool): Whether to list contents recursively. If True, it will traverse subdirectories.
-        files_only (bool): Whether to list only files. If True, directories are ignored.
-        dirs_only (bool): Whether to list only directories. If True, files are ignored.
+        path: The path to the directory.
+        recursive: Whether to list contents recursively. If True, it will traverse subdirectories.
+        files_only: Whether to list only files. If True, directories are ignored.
+        dirs_only: Whether to list only directories. If True, files are ignored.
 
     Returns:
         list: A list of dictionaries containing information about each item in the directory.
@@ -220,7 +220,7 @@ def get_directory_size(path: str) -> dict:
     """Get the size of the specified directory.
 
     Args:
-      path (str): The path to the directory.
+      path: The path to the directory.
 
     Returns:
         dict: A dictionary containing the total size and the number of files in the directory.
@@ -249,7 +249,7 @@ def get_multiple_directory_size(paths: list[str]) -> list[dict]:
     """Get the size of multiple directories.
 
     Args:
-      paths (list[str]): A list of paths to directories.
+        paths: A list of paths to directories.
 
     Returns:
         list[dict]: A list of dictionaries containing the total size and the number of files in each directory.
@@ -264,7 +264,7 @@ def read_file(filepath: str) -> str:
     Read content from a single file, in utf-8 encoding only.
 
     Args:
-      filepath (str): The path to the file.
+      filepath: The path to the file.
 
     Returns:
         str: The content of the file as a string.
@@ -282,7 +282,7 @@ def create_directory(paths: list[str]) -> bool:
     Create single or multiple directories.
 
     Args:
-      paths (list[str]): A list of paths to the new directories.
+      paths: A list of paths to the new directories.
 
     Returns:
         bool: True if directories were created successfully, False otherwise.
@@ -303,7 +303,7 @@ def get_file_metadata(filepath: str) -> dict:
     Get metadata of a file.
 
     Args:
-      filepath (str): The path to the file.
+      filepath: The path to the file.
 
     Returns:
         dict: A dictionary containing file metadata:
@@ -372,8 +372,8 @@ def copy_file(src_filepath: str, dest_filepath: str) -> bool:
     Copy a file from source to destination.
 
     Args:
-      src_filepath (str): Path to the source file.
-      dest_filepath (str): Path to the destination.
+      src_filepath: Path to the source file.
+      dest_filepath: Path to the destination.
 
     Returns:
       bool: True if copy successful, False otherwise.
@@ -392,8 +392,8 @@ def move_file(src_filepath: str, dest_filepath: str) -> bool:
     Move a file from source to destination.
 
     Args:
-      src_filepath (str): Path to the source file.
-      dest_filepath (str): Path to the destination.
+      src_filepath: Path to the source file.
+      dest_filepath: Path to the destination.
 
     Returns:
       bool: True if move successful, False otherwise.
@@ -412,8 +412,8 @@ def rename_file(filepath: str, new_filename: str) -> bool:
     Rename a file.
 
     Args:
-      filepath (str): Current path to the file.
-      new_filename (str): The new filename (not path, just the name).
+      filepath: Current path to the file.
+      new_filename: The new filename (not path, just the name).
 
     Returns:
       bool: True if rename successful, False otherwise.
@@ -434,8 +434,8 @@ def rename_directory(path: str, new_dirname: str) -> bool:
     Rename a directory.
 
     Args:
-      path (str): Current path to the directory.
-      new_dirname (str): The new directory name (not path, just the name).
+      path: Current path to the directory.
+      new_dirname: The new directory name (not path, just the name).
 
     Returns:
       bool: True if rename successful, False otherwise.
@@ -471,7 +471,7 @@ def evaluate_math_expression(expression: str) -> str:
         print(f"{Fore.RED}Error evaluating math expression: {e}{Style.RESET_ALL}")
         return f"Error evaluating math expression: {e}"
 
-def get_current_time() -> str:
+def get_current_datetime() -> str:
     """
     Get the current time and date. Also prints it.
 
@@ -480,7 +480,6 @@ def get_current_time() -> str:
     print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_current_time")
     now = datetime.datetime.now()
     time_str = now.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"{Fore.GREEN}Current time: {time_str}{Style.RESET_ALL}")
     return time_str
 
 def run_shell_command(command: str, blocking: bool) -> str | None:
@@ -870,16 +869,16 @@ def get_environment_variable(key: str) -> str:
         return f"Error retrieving environment variable {e}"
 
 
-def reddit_search(subreddit: str, query: str, sorting: str) -> dict:
+def reddit_search(subreddit: str, sorting: str, query: str | None =None) -> dict:
     """
     Search inside `all` or specific subreddit in reddit to get information.
+    
     This function CAN also work WITHOUT a query with just sorting of specific subreddit/s
     just provide the sorting from one of these ['hot', 'top', 'new'] and leave query as empty string
 
     Args:
         query: The query string to search for, leave as empty string if you are looking for specific sorting like "new" or "hot" all
-        subreddit: The name of the subreddit or 'all' to get everyhing, subreddit names can be mixed for example 'Python+anime+cpp' which could combine them.
-        for global search use 'all'
+        subreddit: The name of the subreddit or 'all' to get everyhing, subreddit names can be mixed for example 'Python+anime+cpp' which could combine them. for global search use 'all'
         sorting: the sorting of the post, can be 'relevance', 'hot', 'top', 'new' or 'comments', use 'top' as default
     
     Example: `reddit_search("AI")`
@@ -908,8 +907,11 @@ def reddit_search(subreddit: str, query: str, sorting: str) -> dict:
                 subs = reddit.subreddit(subreddit).top(limit=max_results)
 
     for s in subs:
+        sub_id = "N/A"
+        if s.name:
+            sub_id = s.name.replace("t3_", "")
         results.append({
-            "submission_id": s.name or "N/A",
+            "submission_id": sub_id,
             "title": s.title or "N/A",
             "text": (s.selftext if s.is_self else s.url) or "N/A",
             "num_comments": s.num_comments,
@@ -917,58 +919,61 @@ def reddit_search(subreddit: str, query: str, sorting: str) -> dict:
             "upvote_ratio": s.upvote_ratio or "N/A"
         })
 
+    print(results)
     print(f"{Fore.CYAN}  ├─Fetched {len(results)} reddit results.")
     return results
 
 def get_reddit_post(submission_id: str) -> dict:
     """Get contents like text title, number of comments subreddit name of a specific 
     reddit post.
-    This does not include comments
+    This does not include comments, just send in the submission id, dont ask the user for it, if they give it use it otherwise use contents of search
 
     Args:
-        submission_id: the submission id of the reddit post
-        
-    Example: 
-        if you have a link of a subreddit like so: `https://www.reddit.com/r/Python/comments/1122aa/some_reddit_post/`
-        use the id like: 1122aa
-        so: `reddit_submission_contents("1122aa")`
+        submission_url: the submission id of the reddit post
 
     Returns: A JSON data of the comments including authors name and the body of the reddit post
     """
 
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_reddit_post")
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_reddit_post {Fore.YELLOW}{submission_id}")
 
-    s = reddit.submission(submission_id)
-    if not s:
-        return "Submission not found/Invalid ID"
+    try:
+        s = reddit.submission(submission_id)
+        if not s:
+            return "Submission not found/Invalid ID"
 
-    result = {
-        "submission_id": s.name or "N/A",
-        "title": s.title or "N/A",
-        "text": (s.selftext if s.is_self else s.url) or "N/A",
-        "num_comments": s.num_comments,
-        "subreddit_name": s.subreddit.display_name or "N/A",
-        "upvote_ratio": s.upvote_ratio or "N/A"
-    }
-    
+        sub_id = "N/A"
+        if s.name:
+            sub_id = s.name.replace("t3_", "")
+
+        result = {
+            "submission_id": sub_id,
+            "title": s.title or "N/A",
+            "text": (s.selftext if s.is_self else s.url) or "N/A",
+            "num_comments": s.num_comments,
+            "subreddit_name": s.subreddit.display_name or "N/A",
+            "upvote_ratio": s.upvote_ratio or "N/A"
+        }
+    except Exception as e:
+        print(f"{Fore.RED}Error getting reddit post: {e}{Style.RESET_ALL}")
+        return f"Error getting reddit post: {e}"
+        
     return result
 
-def reddit_submission_comments(submission_id: str) -> dict: 
+def reddit_submission_comments(submission_url: str) -> dict: 
     """
     Get a compiled list of comments of a specific reddit post
     For finding solutions for a problem, solutions are usually in the comments, so this will be helpful for that
     (Might not include all comments)
 
     Args:
-        submission_id: the submission id of the reddit post
+        submission_url: the submission url of the reddit post
 
-    Example: `reddit_submission_comments("xnobgz")`
 
     Returns: A JSON data of the comments including authors name and the body of the reddit post
     """
     print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}reddit_submission_comments")
 
-    submission = reddit.submission(submission_id)
+    submission = reddit.submission(submission_url)
     if not submission:
         return "Submission not found/Invalid ID"
 
@@ -985,13 +990,13 @@ def reddit_submission_comments(submission_id: str) -> dict:
     return results
 
 TOOLS = [
+    duckduckgo_search_tool,
     reddit_search,
     get_reddit_post,
     reddit_submission_comments,
     log_note,
     read_log_note,
     list_dir,
-    duckduckgo_search_tool,
     get_drives,
     get_directory_size,
     get_multiple_directory_size,
@@ -1009,7 +1014,7 @@ TOOLS = [
     download_file_from_url,
     get_system_info,
     run_shell_command,
-    get_current_time,
+    get_current_datetime,
     evaluate_math_expression,
     get_current_directory,
     zip_archive_files,

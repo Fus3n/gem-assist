@@ -1,8 +1,8 @@
-# Gem-assist - A Gemini-Powered (And Ollama) Personal Assistant
+# Gem-assist - A Personal Assistant In Your Terminal
 
-Gem-Assist is a Python-based personal assistant that leverages the power of Google's Gemini models to help you with various tasks. It's designed to be versatile and extensible, offering a range of tools to interact with your system and the internet. (These were written by AI)
+Gem-Assist is a Python-based personal assistant that leverages the power of Google's Gemini models(and other) to help you with various tasks. It's designed to be versatile and extensible, offering a range of tools to interact with your system and the internet. (These were written by AI)
 
-A short disclaimer this was originally made to be my personal assistant so it might not be as versatile as you might expect.
+A short disclaimer this was originally made to be my personal assistant so it might not be as versatile as you might expect. Originally this was Gemini only now it supports alot because of litellm support, look into `config.py` for more information.
 
 <p align="center">
   <img src="images/gem-assist-demo.gif" alt="Gem-Assist Demo" width="600"/>
@@ -11,7 +11,7 @@ A short disclaimer this was originally made to be my personal assistant so it mi
 
 ## Features
 
-*   **Powered by Gemini:** Utilizes the latest Gemini models for natural language understanding and generation. (**Ollama** version is still very early WIP)
+*   **Powered by LLM:** Utilizes LLM's for natural language understanding and generation.
 
 *   **Tool-based architecture:** Equipped with a variety of tools for tasks like:
     *   Web searching (DuckDuckGo)
@@ -22,6 +22,7 @@ A short disclaimer this was originally made to be my personal assistant so it mi
     *   And more!
 *   **Customizable:**  Easily configure the assistant's behavior and extend its capabilities with new tools.
 *   **Simple Chat Interface:** Interact with the assistant through a straightforward command-line chat interface.
+*   **Memory:** Can save notes between converstaion and remember them.
 
 ## Getting Started
 
@@ -58,11 +59,13 @@ uv sync
 
 ### Usage
 
-Run the `gem-assist.py` script to start the chat interface:
+Run the `assistant.py` script to start the chat interface:
 
 ```bash
-uv run gem-assist.py
+uv run assistant.py
 ```
+
+Ignore `gem_assist_old.py` and `ollama_assist_old.py`
 
 You can then interact with Gemini by typing commands in the chat.  Type `exit`, `quit`, or `bye` to close the chat.
 
@@ -74,7 +77,7 @@ The main configuration file is `config.py`. Here you can customize:
 *   **`NAME`**: Set the name of your assistant.
 *   **`SYSTEM_PROMPT`**:  Modify the system prompt to adjust the assistant's personality and instructions.
 
-**Note:**  Restart the `gemini_assist.py` script after making changes to `config.py`.
+**Note:**  Restart the `assistant.py` script after making changes to `config.py`.
 
 ## Tools
 

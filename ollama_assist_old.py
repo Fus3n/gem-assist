@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     sys_instruct = (conf.get_system_prompt() + "Here are the things previously saved on your notes:\n" + open("./ai-log.txt").read()).strip()
 
-    MODEL = "phi-4-mini-instruct_Q8"
+    MODEL = "qwen2.5-coder"
     
     ollama_assist = OllamaAssistant(MODEL, system_instruction=sys_instruct, thinking=False)
     

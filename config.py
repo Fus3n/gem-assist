@@ -6,14 +6,16 @@ Needs restart if anything is changed here.
 
 import datetime
 import platform
-from typing import Literal
 import requests
 
-# Which Gemini model to use
-# If you want custom or a newer model, just add the name in the `available_models` list in `gemini_assist.py`
-ModelOptions = Literal["gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-2.0-pro-exp-02-05"]
+# Which model to use
+# can be gemini/gemini-2.0-flash or gemini/gemini-2.0-flash-lite
+# Also supports ollama if you are using `assistant.py` by setting `ollama/qwen2.5`
+# or if you want to use gemini-2.0-flash from openrouter for example you can put `openrouter/google/gemini-2.0-flash-exp:free`
+# Not every model supports tool calling so some might throw errors
+# Here you can find all the supported provider: https://docs.litellm.ai/docs/providers/
 
-MODEL: ModelOptions = "gemini-2.0-flash"
+MODEL = "groq/llama-3.3-70b-versatile"
 
 # The assistants name
 NAME = "Gemini"
@@ -68,7 +70,7 @@ def get_system_prompt():
 # DUCKDUCKGO SEARCH
 
 # The max amount of results duckduckgo search tool can return
-MAX_DUCKDUCKGO_SEARCH_RESULTS: int = 5
+MAX_DUCKDUCKGO_SEARCH_RESULTS: int = 6
 
 # Timeout
 DUCKDUCKGO_TIMEOUT: int = 20
