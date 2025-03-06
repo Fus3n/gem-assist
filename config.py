@@ -15,7 +15,7 @@ import requests
 # Not every model supports tool calling so some might throw errors
 # Here you can find all the supported provider: https://docs.litellm.ai/docs/providers/
 
-MODEL = "groq/llama-3.3-70b-versatile"
+MODEL = "emini/gemini-2.0-flash"
 
 # The assistants name
 NAME = "Gemini"
