@@ -20,9 +20,8 @@ load_dotenv()
 
 class Assistant:
 
-    
 
-    def __init__(self, model: str, name: str = "Assitant", tools: list[Callable] = [], system_instruction: str = "") -> None:
+    def __init__(self, model: str, name: str = "Assistant", tools: list[Callable] = [], system_instruction: str = "") -> None:
         self.model = model
         self.name = name
         self.system_instruction = system_instruction
@@ -111,8 +110,12 @@ class Assistant:
         self.messages.append(response_message) 
         final_response = None
 
+        # Multi-turn parallel tool calling
+        # This will keep checking for tool calls and will call them
+        # if any tools return an error it will be sent back to the AI
         try:
             while tool_calls:
+                print(tool_calls)
                 for tool_call in tool_calls:
                     function_name = tool_call.function.name
 
@@ -131,10 +134,14 @@ class Assistant:
                         if param_name in function_args:
                             function_args[param_name] = self.convert_to_pydantic_model(param.annotation, function_args[param_name])
 
-                    function_response = function_to_call(**function_args)
-
-                    # response of tool
-                    self.add_toolcall_output(tool_call.id, function_name, function_response)
+                    try:
+                        function_response = function_to_call(**function_args)
+                        # response of tool
+                        self.add_toolcall_output(tool_call.id, function_name, function_response)
+                    except Exception as e:
+                        print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
+                        self.add_toolcall_output(tool_call.id, tool_call.function.name, str(e))
+                        continue
 
                 final_response = litellm.completion(
                     model=self.model,
@@ -142,23 +149,22 @@ class Assistant:
                     tools=self.tools,
                     temperature=self.temperature,
                 ) 
+
                 tool_calls = final_response.choices[0].message.tool_calls
                 if not tool_calls:
                     response_message = final_response.choices[0].message
                     self.messages.append(response_message) 
                     break
-                self.messages.append(final_response.choices[0].message) 
 
+                self.messages.append(final_response.choices[0].message) 
 
             if print_response:
                 self.print_ai(response_message.content)
             
             return response_message
-
         except Exception as e:
             print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
-            self.add_msg_assistant(f"Error: {e}")
-            self.get_completion()
+
             
 
 if __name__ == "__main__":
@@ -174,10 +180,12 @@ if __name__ == "__main__":
             msg = input(f"{Fore.CYAN}│ {Fore.MAGENTA}You:{Style.RESET_ALL} ")
             print(f"{Fore.CYAN}└{'─' * 58}┘{Style.RESET_ALL}")
             
-            if msg.lower() in ['exit', 'quit', 'bye']:
+            if not msg: continue
+
+            if msg.lower() in ['/exit', '/quit', '/bye']:
                 print(f"\n{Fore.GREEN}Thank you for using {conf.NAME} AI Chat. Goodbye!{Style.RESET_ALL}")
                 break
-                
+
             assistant.send_message(msg)
 
         except KeyboardInterrupt:

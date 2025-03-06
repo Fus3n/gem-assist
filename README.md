@@ -52,7 +52,7 @@ uv sync
     *   Create a `.env` file in the project root.
     *   Add your Google Cloud API key:
         ```
-        GOOGLE_API_KEY=YOUR_API_KEY
+        GEMINI_API_KEY=YOUR_API_KEY
         REDDIT_ID=YOUR_REDDIT_CLIENT_ID # (Optional, for Reddit tools)
         REDDIT_SECRET=YOUR_REDDIT_CLIENT_SECRET # (Optional, for Reddit tools)
         ```
@@ -73,7 +73,7 @@ You can then interact with Gemini by typing commands in the chat.  Type `exit`, 
 
 The main configuration file is `config.py`. Here you can customize:
 
-*   **`MODEL`**:  Choose the Gemini model to use (e.g., `"gemini-2.0-flash"`, `"gemini-2.0-pro-exp-02-05"`).
+*   **`MODEL`**:  Choose the Gemini model to use (e.g., `"gemini/gemini-2.0-flash"`, `"gemini/gemini-2.0-pro-exp-02-05"`) for more models checkout: [docs.litellm.ai/docs/providers/](https://docs.litellm.ai/docs/providers/)
 *   **`NAME`**: Set the name of your assistant.
 *   **`SYSTEM_PROMPT`**:  Modify the system prompt to adjust the assistant's personality and instructions.
 
@@ -88,7 +88,7 @@ GemFunc comes with a set of built-in tools that you can use in your conversation
 *   **System:** `get_system_info`, `run_shell_command`, `get_current_time`, `get_current_directory`, `get_drives`, `get_environment_variable`
 *   **Web Interaction:** `get_website_text_content`, `http_get_request`, `open_url`, `download_file_from_url`
 *   **Reddit:** `reddit_search`, `get_reddit_post`, `reddit_submission_comments`
-*   **Utility:** `evaluate_math_expression`, `zip_archive_files`, `zip_extract_files`, `log_note`, `read_log_note`
+*   **Utility:** `evaluate_math_expression`, `zip_archive_files`, `zip_extract_files`, `write_note`, `read_note`
 
 ## Dependencies
 
@@ -105,8 +105,8 @@ The project dependencies are managed by UV and listed in `pyproject.toml`. Key d
 ## Known Issues
 
 *   **Web Interaction:**  Web interaction tools may not work as expected due to rate limits and other issues.
-*   **File system:** There is a bug with gemini sending large payload in function calling argument, it just fails to parse for some reason, so make sure to not tell it to write large files it might stop because of MALFORMED_FUNCTION_CALL.
 *   **File download tool:** Might not show progress or filename (if not explicitly provided) correctly if file download endpoint is dynamic
+*   **Multi Turn tool calling:** Sometimes when AI calls multiple tools if each tools returns huge amount of data it could break it sometimes
 
 
 ## License

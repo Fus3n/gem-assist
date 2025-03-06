@@ -70,7 +70,7 @@ def get_system_prompt():
 # DUCKDUCKGO SEARCH
 
 # The max amount of results duckduckgo search tool can return
-MAX_DUCKDUCKGO_SEARCH_RESULTS: int = 6
+MAX_DUCKDUCKGO_SEARCH_RESULTS: int = 4
 
 # Timeout
 DUCKDUCKGO_TIMEOUT: int = 20

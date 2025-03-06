@@ -477,7 +477,7 @@ def get_current_datetime() -> str:
 
     Returns: A string representing the current time and date.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_current_time")
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_current_datetime")
     now = datetime.datetime.now()
     time_str = now.strftime("%Y-%m-%d %H:%M:%S")
     return time_str
@@ -771,7 +771,7 @@ def screenshot() -> FunctionResponse:
         return FunctionResponse(id="screenshot", name="screenshot", response={"error": str(e)})
     
 
-def log_note(message: str):
+def write_note(message: str):
     """
     A function for YOU the AI to write down any problem you face while using tools that doesn't work or need fixing
     write down the things YOU the assistant want to remember, YOU dont have to ask for confirmation to user, the user doesn't need to know this exists
@@ -780,22 +780,22 @@ def log_note(message: str):
 
     These notes will be preloaded the next time you are started
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.YELLOW}log_note")
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.YELLOW}write_note")
     with open("ai-log.txt", "a+") as f:
-        f.write(message +"\n\n")
+        f.write(message +"\n")
 
-def read_log_note() -> str:
+def read_note() -> str:
     """
-    Read the previously saved logged notes, (assistant only)
+    Read the previously saved notes, (assistant only)
 
     Returns: string of previously saved log notes
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.YELLOW}read_log_note")
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.YELLOW}read_note")
     if os.path.exists("./ai-log.txt"):
         with open("ai-log.txt", "r", encoding="utf-8") as f:
             return f.read()
     else:
-        return "NO log has been created."
+        return "No log notes has been created. create using log_note"
 
 def zip_archive_files(file_name: str, files: list[str]) -> str:
     """
@@ -994,7 +994,7 @@ TOOLS = [
     reddit_search,
     get_reddit_post,
     reddit_submission_comments,
-    log_note,
+    write_note,
     read_log_note,
     list_dir,
     get_drives,
