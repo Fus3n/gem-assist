@@ -773,7 +773,7 @@ def screenshot() -> FunctionResponse:
 
 def write_note(message: str):
     """
-    A function for YOU the AI to write down any problem you face while using tools that doesn't work or need fixing
+    A function for YOU the AI to write down any problem you face while using tools that doesn't work or need fixing or if you want to remember something
     write down the things YOU the assistant want to remember, YOU dont have to ask for confirmation to user, the user doesn't need to know this exists
     Use it whenever needed and you wanna save a piece of information including bug reports.
     This is not a TODO for the user but the assistant
@@ -795,7 +795,7 @@ def read_note() -> str:
         with open("ai-log.txt", "r", encoding="utf-8") as f:
             return f.read()
     else:
-        return "No log notes has been created. create using log_note"
+        return ""
 
 def zip_archive_files(file_name: str, files: list[str]) -> str:
     """
@@ -995,7 +995,7 @@ TOOLS = [
     get_reddit_post,
     reddit_submission_comments,
     write_note,
-    read_log_note,
+    read_note,
     list_dir,
     get_drives,
     get_directory_size,

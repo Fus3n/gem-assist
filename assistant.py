@@ -1,5 +1,6 @@
 import inspect
 import json
+import os
 from typing import Callable
 import traceback
 from typing import Union
@@ -115,7 +116,6 @@ class Assistant:
         # if any tools return an error it will be sent back to the AI
         try:
             while tool_calls:
-                print(tool_calls)
                 for tool_call in tool_calls:
                     function_name = tool_call.function.name
 
@@ -170,7 +170,12 @@ class Assistant:
 if __name__ == "__main__":
     colorama.init(autoreset=True)
 
-    sys_instruct = (conf.get_system_prompt() + "Here are the things previously saved on your notes:\n" + open("./ai-log.txt").read()).strip()
+    notes = ""
+    if os.path.exists("./ai-log.txt"):
+        with open("ai-log.txt", "r", encoding="utf-8") as f:
+            notes = f.read()
+
+    sys_instruct = (conf.get_system_prompt() + "Here are the things previously saved on your notes:\n" + notes).strip()
     
     assistant = Assistant(model=conf.MODEL, system_instruction=sys_instruct, tools=TOOLS)
     
