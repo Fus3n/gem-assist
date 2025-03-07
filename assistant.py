@@ -164,7 +164,6 @@ class Assistant:
             return response_message
         except Exception as e:
             print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
-
             
 
 if __name__ == "__main__":

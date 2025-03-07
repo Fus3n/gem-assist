@@ -19,5 +19,6 @@ dependencies = [
     "pypdl>=1.5.2",
     "python-dotenv>=1.0.1",
     "rich>=13.9.4",
+    "wikipedia>=1.4.0",
     "wmi>=1.5.1",
 ]

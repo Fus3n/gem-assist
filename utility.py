@@ -1,3 +1,4 @@
+import glob
 import os, re
 import datetime
 import platform
@@ -22,6 +23,7 @@ from colorama import Fore, Style
 from pydantic import BaseModel, Field
 from google.genai.types import FunctionResponse, Image
 from pypdl import Pypdl
+import wikipedia
 
 from rich.console import Console
 from rich.live import Live
@@ -989,6 +991,91 @@ def reddit_submission_comments(submission_url: str) -> dict:
     print(f"{Fore.CYAN}  ├─Fetched {len(results)} reddit comments.")
     return results
 
+def find_files(pattern: str, directory: str = ".", recursive: bool = False, include_hidden: bool = False) -> list[str]:
+    """
+    Searches for files (using glob) matching a given pattern within a specified directory.
+
+    Args:
+        pattern: The glob pattern to match (e.g., "*.txt", "data_*.csv").
+        directory: The directory to search in (defaults to the current directory).
+        recursive: Whether to search recursively in subdirectories (default is False).
+        include_hidden: Whether to include hidden files (default is False).
+
+    Returns:
+        A list of file paths that match the pattern.  Returns an empty list if no matches are found.
+        Returns an appropriate error message if the directory does not exist or is not accessible.
+    """
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}find_files {Fore.YELLOW}{pattern} {Fore.YELLOW}{directory}")
+    try:
+        if not os.path.isdir(directory):
+            return f"Error: Directory '{directory}' not found."  # Clear error message
+
+        full_pattern = os.path.join(directory, pattern)  # Combine directory and pattern
+        matches = glob.glob(full_pattern, recursive=recursive, include_hidden=include_hidden)
+
+        # Check if the list is empty and return a message.
+        if not matches:
+            return "No files found matching the criteria."
+
+        return matches  # Return the list of matching file paths
+
+    except OSError as e:
+        return f"Error: {e}"  # Return the system error message
+
+def get_wikipedia_summary(page: str) -> str:
+    """
+    Get a quick summery of a specific Wikipedia page, page must be a valid page name (not case sensitive)
+
+    Args:
+        page: the page name of the Wikipedia page (can be url too)
+
+    Returns: A summary of the Wikipedia page
+    """
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_wikipedia_summary {Fore.YELLOW}{page}")
+    try:
+        if page.startswith("https"):
+            page = page.split("wiki/")[1]
+        return wikipedia.summary(page)
+    except Exception as e:
+        print(f"{Fore.RED}Error getting Wikipedia summary: {e}{Style.RESET_ALL}")
+        return f"Error getting Wikipedia summary: {e}"
+
+def search_wikipedia(query: str) -> list:
+    """
+    Search Wikipedia for a given query and return a list of search results, which can be used to get summery or full page conent
+
+    Args:
+        query: the search query
+
+    Returns: A list of Wikipedia search results
+    """
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}search_wikipedia {Fore.YELLOW}{query}")
+    try:
+        return wikipedia.search(query)
+    except Exception as e:
+        print(f"{Fore.RED}Error searching Wikipedia: {e}{Style.RESET_ALL}")
+
+def get_full_wikipedia_page(page: str) -> str:
+    """
+    Get the full content of a Wikipedia page, page must be a valid page name (not case sensitive)
+    Use get_wikipedia_summary if you want a quick summery, and use this to get full page of any wikipedia, do not use get_website_text_content for wikipeida
+
+    Args:
+        page: the page name of the Wikipedia page (can be url too)
+
+    Returns: A full Wikipedia page
+    """
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_full_wikipedia_page {Fore.YELLOW}{page}")
+    try:
+        if page.startswith("https"):
+            page = page.split("wiki/")[1]
+        page =  wikipedia.page(page)
+        content = f"Title: {page.title}\nUrl:{page.url}\n{page.content}"
+        return content
+    except Exception as e:
+        print(f"{Fore.RED}Error getting Wikipedia page: {e}{Style.RESET_ALL}")
+        return f"Error getting Wikipedia page: {e}"
+
 TOOLS = [
     duckduckgo_search_tool,
     reddit_search,
@@ -1008,6 +1095,7 @@ TOOLS = [
     move_file,
     rename_file,
     rename_directory,
+    find_files,
     get_website_text_content,
     http_get_request,
     open_url,
@@ -1020,4 +1108,7 @@ TOOLS = [
     zip_archive_files,
     zip_extract_files,
     get_environment_variable,
+    get_wikipedia_summary,
+    search_wikipedia,
+    get_full_wikipedia_page,
 ]

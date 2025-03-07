@@ -36,7 +36,7 @@ A short disclaimer this was originally made to be my personal assistant so it mi
 
 1.  Clone the repository:
 ```bash
-git clone [repository_url]
+git clone https://github.com/Fus3n/gem-assist
 cd gem-assist
 ```
 
@@ -81,7 +81,7 @@ The main configuration file is `config.py`. Here you can customize:
 
 ## Tools
 
-GemFunc comes with a set of built-in tools that you can use in your conversations.  These tools are defined in the `utility.py` file and include functionalities for:
+gem-assist comes with a set of built-in tools that you can use in your conversations.  These tools are defined in the `utility.py` file, some of the functionalities are:
 
 *   **Web Search:** `duckduckgo_search_tool`
 *   **File System:** `list_dir`, `read_file`, `write_files`, `create_directory`, `copy_file`, `move_file`, `rename_file`, `rename_directory`, `get_file_metadata`, `get_directory_size`, `get_multiple_directory_size`
@@ -89,6 +89,8 @@ GemFunc comes with a set of built-in tools that you can use in your conversation
 *   **Web Interaction:** `get_website_text_content`, `http_get_request`, `open_url`, `download_file_from_url`
 *   **Reddit:** `reddit_search`, `get_reddit_post`, `reddit_submission_comments`
 *   **Utility:** `evaluate_math_expression`, `zip_archive_files`, `zip_extract_files`, `write_note`, `read_note`
+
+**And much more!**
 
 ## Dependencies
 
