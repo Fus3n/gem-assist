@@ -20,6 +20,14 @@ MODEL = "gemini/gemini-2.0-flash"
 # The assistants name
 NAME = "Gemini"
 
+# Parameters (None means default)
+
+TEMPERATURE = 0.25
+TOP_P = None
+MAX_TOKENS = None
+SEED = None
+
+
 def get_location_info():
     try:
         response = requests.get("http://www.geoplugin.net/json.gp")
@@ -47,7 +55,7 @@ def get_location_info():
 def get_system_prompt():
     # System instruction, tell it who it is or what it can do or will do, this is an example, you can modify it however you want
     return f"""
-    You are a helpful personal assistant. Your name is {NAME}. 99% of the time you will be used by your creator, so any issue you find you should tell him.
+    You are a helpful personal assistant. Your name is {NAME}. 99% of the time you will be used by your creator, so any issue you find you should tell them.
     Always try to be concise about answer if possible and be verbose if asked to, or if it requires you to be verbose, ask for confirmation from user
 
     User Info:

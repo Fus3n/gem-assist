@@ -5,7 +5,7 @@ Gem-Assist is a Python-based personal assistant that leverages the power of Goog
 A short disclaimer this was originally made to be my personal assistant so it might not be as versatile as you might expect. Originally this was Gemini only now it supports alot because of litellm support, look into `config.py` for more information.
 
 <p align="center">
-  <img src="images/gem-assist-demo.gif" alt="Gem-Assist Demo" width="600"/>
+  <img src="images/gem-assist-demo.gif" alt="Gem-Assist Demo" width="800"/>
 </p>
 
 

@@ -12,6 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from PIL import ImageGrab
 import psutil
+import thefuzz.process
 import wmi
 
 import praw
@@ -23,6 +24,7 @@ from colorama import Fore, Style
 from pydantic import BaseModel, Field
 from google.genai.types import FunctionResponse, Image
 from pypdl import Pypdl
+import thefuzz
 import wikipedia
 
 from rich.console import Console
@@ -921,7 +923,6 @@ def reddit_search(subreddit: str, sorting: str, query: str | None =None) -> dict
             "upvote_ratio": s.upvote_ratio or "N/A"
         })
 
-    print(results)
     print(f"{Fore.CYAN}  ├─Fetched {len(results)} reddit results.")
     return results
 
@@ -1076,6 +1077,29 @@ def get_full_wikipedia_page(page: str) -> str:
         print(f"{Fore.RED}Error getting Wikipedia page: {e}{Style.RESET_ALL}")
         return f"Error getting Wikipedia page: {e}"
 
+# This is to help the assistant possibly fixing it hellucinating some functions
+# Not sure if it works or not though
+def find_tools(query: str) -> list[str]:
+    """
+    Allows the assistant to find tools that fuzzy matchs a given query. 
+    Use this when you are not sure if a tool exists or not, it is a fuzzy search.
+
+    Args:
+        query: The search query.
+
+    Returns:
+        A list of tool names and doc that match the query.
+    """
+    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}find_tools {Fore.YELLOW}{query}")
+    # TOOLS variable is defined later
+    tools = [tool.__name__ for tool in TOOLS]
+    best_matchs = thefuzz.process.extractBests(query, tools) # [(tool_name, score), ...]
+    return [
+        [match[0], next((tool.__doc__.strip() for tool in TOOLS if tool.__name__ == match[0]), None)]
+        for match in best_matchs
+        if match[1] > 60 # only return tools with a score above 60
+    ]
+
 TOOLS = [
     duckduckgo_search_tool,
     reddit_search,
@@ -1111,4 +1135,5 @@ TOOLS = [
     get_wikipedia_summary,
     search_wikipedia,
     get_full_wikipedia_page,
+    find_tools,
 ]

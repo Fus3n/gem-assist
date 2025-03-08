@@ -1,3 +1,13 @@
+"""
+This package provides functionality to convert Python functions into JSON schemas,
+primarily for use with Large Language Models (LLMs) that support function calling.
+
+It leverages type hints, docstrings, and function signatures to automatically
+generate a JSON schema representing the function's parameters, descriptions, and
+other relevant information. This allows LLMs to understand the function's
+purpose and how to call it correctly.
+"""
+
 import inspect
 from types import UnionType
 from typing import Any, Dict, get_type_hints, get_origin, get_args, Literal, Callable

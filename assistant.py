@@ -30,8 +30,6 @@ class Assistant:
         self.available_functions = {func.__name__: func for func in tools}
         self.tools = list(map(function_to_json_schema, tools))
 
-        self.temperature = 0.25
-        
         if system_instruction: self.messages.append({"role": "system", "content": system_instruction})
         
         self.console = Console()
@@ -42,7 +40,10 @@ class Assistant:
             model=self.model,
             messages=self.messages,
             tools=self.tools,
-            temperature=self.temperature,
+            temperature=conf.TEMPERATURE,
+            top_p=conf.TOP_P,
+            max_tokens=conf.MAX_TOKENS,
+            seed=conf.SEED,
         )
         return self.__process_response(response)
 
@@ -57,7 +58,10 @@ class Assistant:
             model=self.model,
             messages=self.messages,
             tools=self.tools,
-            temperature=self.temperature,
+            temperature=conf.TEMPERATURE,
+            top_p=conf.TOP_P,
+            max_tokens=conf.MAX_TOKENS,
+            seed=conf.SEED,
         )
         return self.__process_response(response)
     
@@ -147,7 +151,10 @@ class Assistant:
                     model=self.model,
                     messages=self.messages,
                     tools=self.tools,
-                    temperature=self.temperature,
+                    temperature=conf.TEMPERATURE,
+                    top_p=conf.TOP_P,
+                    max_tokens=conf.MAX_TOKENS,
+                    seed=conf.SEED,
                 ) 
 
                 tool_calls = final_response.choices[0].message.tool_calls
