@@ -15,6 +15,8 @@ from rich.markdown import Markdown
 import config as conf
 
 from func_to_schema import function_to_json_schema
+from gem.command import InvalidCommand, CommandNotFound, CommandExecuter
+import gem
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -183,6 +185,11 @@ if __name__ == "__main__":
 
     sys_instruct = (conf.get_system_prompt() + "Here are the things previously saved on your notes:\n" + notes).strip()
     
+    # handle commands
+    command = gem.CommandExecuter.register_commands(gem.builtin_commands.COMMANDS)
+    # set command prefix (default is /)
+    # CommandExecuter.command_prefix = "/"
+
     assistant = Assistant(model=conf.MODEL, system_instruction=sys_instruct, tools=TOOLS)
     
     while True:
@@ -193,15 +200,19 @@ if __name__ == "__main__":
             
             if not msg: continue
 
-            if msg.lower() in ['/exit', '/quit', '/bye']:
-                print(f"\n{Fore.GREEN}Thank you for using {conf.NAME} AI Chat. Goodbye!{Style.RESET_ALL}")
-                break
+            if msg.startswith("/"):
+                CommandExecuter.execute(msg)
+                continue
 
             assistant.send_message(msg)
 
         except KeyboardInterrupt:
             print(f"\n\n{Fore.GREEN}Chat session interrupted. Goodbye!{Style.RESET_ALL}")
             break
+        except InvalidCommand as e:
+            print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
+        except CommandNotFound as e:
+            print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}An error occurred: {e}{Style.RESET_ALL}")
             traceback.print_exc()

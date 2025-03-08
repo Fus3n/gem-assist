@@ -23,6 +23,8 @@ A short disclaimer this was originally made to be my personal assistant so it mi
 *   **Customizable:**  Easily configure the assistant's behavior and extend its capabilities with new tools.
 *   **Simple Chat Interface:** Interact with the assistant through a straightforward command-line chat interface.
 *   **Memory:** Can save notes between converstaion and remember them.
+*   **Commands:** Supports creating/executing (code), use `/commands` for more information.
+*   **Extension:** For now you are required to write some code to extend its capabilites like adding commands to `CommandExecutor` or making new tools, there should be enough exmaple in `gem/builtin_commands.py` for commands and `utility.py` for tools
 
 ## Getting Started
 
