@@ -6,11 +6,9 @@ import subprocess
 import webbrowser
 import shutil
 import zipfile
-from io import BytesIO
 
 import requests
 from bs4 import BeautifulSoup
-from PIL import ImageGrab
 import psutil
 import thefuzz.process
 import wmi
@@ -22,7 +20,6 @@ from dotenv import load_dotenv
 import colorama
 from colorama import Fore, Style
 from pydantic import BaseModel, Field
-from google.genai.types import FunctionResponse, Image
 from pypdl import Pypdl
 import thefuzz
 import wikipedia
@@ -32,6 +29,7 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TimeRemainingColumn
 from rich.text import Text
+import time
 
 import config as conf
 
@@ -48,6 +46,32 @@ reddit = praw.Reddit(
     user_agent="PersonalBot/1.0",
 )
 
+def tool_message_print(msg: str, args: list[tuple[str, str]] = None):
+    """
+    Prints a tool message with the given message and arguments.
+
+    Args:
+        msg: The message to print.
+        args: A list of tuples containing the argument name and value. Optional.
+    """
+    full_msasage = f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}{msg}"
+    if args:
+        for arg in args:
+            full_msasage += f" [{Fore.YELLOW}{arg[0]}{Fore.WHITE}={arg[1]}]"
+    print(full_msasage)
+
+def tool_report_print(msg: str, value: str, is_error: bool = False):
+    """
+    Print when a tool needs to put out a message as a report
+
+    Args:
+        msg: The message to print.
+        value: The value to print.
+        is_error: Whether this is an error message. If True, value will be printed in red.
+    """
+    value_color = Fore.RED if is_error else Fore.YELLOW
+    full_msasage = f"{Fore.CYAN}  ├─{Style.RESET_ALL} {msg} {value_color}{value}"
+    print(full_msasage)
 
 def duckduckgo_search_tool(query: str) -> list:
     """
@@ -59,7 +83,7 @@ def duckduckgo_search_tool(query: str) -> list:
     Returns:
         list: A list of search results.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}duckduckgo_search_tool {Fore.YELLOW}{query}")
+    tool_message_print("duckduckgo_search_tool", [("query", query)])
     try:
         
         ddgs = duckduckgo_search.DDGS(timeout=conf.DUCKDUCKGO_TIMEOUT)
@@ -76,11 +100,11 @@ def get_current_directory() -> str:
     Returns:
         str: The absolute path of the current working directory as a string.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_current_directory")
+    tool_message_print("get_current_directory", [])
     try:
         return os.getcwd()
     except Exception as e:
-        print(f"{Fore.RED}Error getting current directory: {e}{Style.RESET_ALL}")
+        tool_report_print("Error getting current directory:", str(e), is_error=True)
         return f"Error getting current directory: {e}"
 
 def list_dir(path: str, recursive: bool, files_only: bool, dirs_only: bool) -> list:
@@ -104,7 +128,8 @@ def list_dir(path: str, recursive: bool, files_only: bool, dirs_only: bool) -> l
             
             Note that it can have different behavior based on given arguments, for example if you only need files, set `files_only=True` and ignore `dirs_only` and `recursive` arguments, they won't have any effect.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}list_dir {Fore.YELLOW}{path}")
+    tool_message_print("list_dir", [("path", path), ("recursive", str(recursive)), 
+                                   ("files_only", str(files_only)), ("dirs_only", str(dirs_only))])
     items = []
 
     def add_item(item_path):
@@ -173,7 +198,7 @@ def get_drives() -> list[dict]:
                      - 'FreeSpace': The amount of free space in human-readable format (GB or MB), or 'N/A'.
                      - 'TotalSize': The total size of the drive in human-readable format (GB or MB), or 'N/A'.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_drives")
+    tool_message_print("get_drives")
     drives = []
     os_type = platform.system()
 
@@ -214,7 +239,6 @@ def get_drives() -> list[dict]:
                 print(f"{Fore.YELLOW}Failed to get drive information for {partition.mountpoint}.  Skipping.{Style.RESET_ALL}")
                 return []
     else:
-        print(f"{Fore.YELLOW}Unsupported OS: {os_type}.  Returning empty drive list.{Style.RESET_ALL}")
         return []
 
     return drives
@@ -232,7 +256,7 @@ def get_directory_size(path: str) -> dict:
         - 'TotalSize': The total size of the directory in human-readable format (GB or MB).
         - 'FileCount': The number of files in the directory.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_directory_size {Fore.YELLOW}{path}")
+    tool_message_print("get_directory_size", [("path", path)])
     total_size = 0
     file_count = 0
 
@@ -259,7 +283,7 @@ def get_multiple_directory_size(paths: list[str]) -> list[dict]:
         list[dict]: A list of dictionaries containing the total size and the number of files in each directory.
         each item is the same as `get_directory_size`
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_multiple_directory_size")
+    tool_message_print("get_multiple_directory_size", [("paths", str(paths))])
     return [get_directory_size(path) for path in paths]
 
 
@@ -273,12 +297,12 @@ def read_file(filepath: str) -> str:
     Returns:
         str: The content of the file as a string.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}read_file {Fore.YELLOW}{filepath}")
+    tool_message_print("read_file", [("filepath", filepath)])
     try:
         with open(filepath, 'r', encoding="utf-8") as f:
             return f.read()
     except Exception as e:
-        print(f"{Fore.RED}Error reading file: {e}{Style.RESET_ALL}")
+        tool_report_print("Error reading file:", str(e), is_error=True)
         return f"Error reading file: {e}"
 
 def create_directory(paths: list[str]) -> bool:
@@ -291,15 +315,15 @@ def create_directory(paths: list[str]) -> bool:
     Returns:
         bool: True if directories were created successfully, False otherwise.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}create_directory {Fore.YELLOW}{paths}")
+    tool_message_print("create_directory", [("paths", str(paths))])
     try:
         success = True
         for path in paths:
             os.makedirs(path, exist_ok=True)
-            print(f"{Fore.CYAN}  ├─{Style.RESET_ALL} Created ✅: {Fore.YELLOW}{path}")
+            tool_report_print("Created ✅:", path)
         return success
     except Exception as e:
-        print(f"{Fore.RED}Error creating directory: {e}{Style.RESET_ALL}")
+        tool_report_print("Error creating directory:", str(e), is_error=True)
         return False
 
 def get_file_metadata(filepath: str) -> dict:
@@ -316,7 +340,7 @@ def get_file_metadata(filepath: str) -> dict:
               - 'creation_time_readable': The creation time in ISO format.
               - 'modification_time_readable': The modification time in ISO format.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_file_metadata {Fore.YELLOW}{filepath}")
+    tool_message_print("get_file_metadata", [("filepath", filepath)])
     try:
         timestamp_creation = os.path.getctime(filepath)
         timestamp_modification = os.path.getmtime(filepath)
@@ -327,7 +351,7 @@ def get_file_metadata(filepath: str) -> dict:
             'modification_time_readable': datetime.datetime.fromtimestamp(timestamp_modification).isoformat()
         }
     except Exception as e:
-        print(f"{Fore.RED}Error getting file metadata: {e}{Style.RESET_ALL}")
+        tool_report_print("Error getting file metadata:", str(e), is_error=True)
         return f"Error getting file metadata: {e}"
 
 
@@ -345,7 +369,7 @@ def write_files(files_data: list[FileData]) -> dict:
     Returns:
       dict: A dictionary with file paths as keys and success status as values.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}write_files {Fore.YELLOW}")
+    tool_message_print("write_files", [("count", str(len(files_data)))])
     results = {}
     
     for file_data in files_data:
@@ -356,17 +380,17 @@ def write_files(files_data: list[FileData]) -> dict:
 
             with open(file_data.file_path, 'w', encoding="utf-8") as f:
                 f.write(file_data.content)
-            print(f"{Fore.CYAN}  ├─{Style.RESET_ALL} Created ✅: {Fore.YELLOW}{file_data.file_path}")
+            tool_report_print("Created ✅:", file_data.file_path)
             results[file_data.file_path] = True
         except Exception as e:
-            print(f"{Fore.RED}  ├─{Style.RESET_ALL} ❌ {file_data.file_path}")
-            print(f"{Fore.RED}Error writing file: {e}{Style.RESET_ALL}")
+            tool_report_print("❌", file_data.file_path, is_error=True)
+            tool_report_print("Error writing file:", str(e), is_error=True)
             results[file_data.file_path] = False
 
     success_count = sum(1 for success in results.values() if success)
     total_count = len(results)
     
-    print(f"{Fore.GREEN if success_count == total_count else Fore.YELLOW}Wrote {success_count}/{total_count} files successfully{Style.RESET_ALL}")
+    tool_report_print("Summary:", f"Wrote {success_count}/{total_count} files successfully")
     
     return results
 
@@ -382,13 +406,13 @@ def copy_file(src_filepath: str, dest_filepath: str) -> bool:
     Returns:
       bool: True if copy successful, False otherwise.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}copy_file {Fore.YELLOW}{src_filepath} {Fore.GREEN}→ {Fore.YELLOW}{dest_filepath}")
+    tool_message_print("copy_file", [("src_filepath", src_filepath), ("dest_filepath", dest_filepath)])
     try:
-        shutil.copy2(src_filepath, dest_filepath)  # copy2 preserves metadata
-        print(f"{Fore.GREEN}File copied successfully{Style.RESET_ALL}")
+        shutil.copy2(src_filepath, dest_filepath) 
+        tool_report_print("Status:", "File copied successfully")
         return True
     except Exception as e:
-        print(f"{Fore.RED}Error copying file: {e}{Style.RESET_ALL}")
+        tool_report_print("Error copying file:", str(e), is_error=True)
         return False
 
 def move_file(src_filepath: str, dest_filepath: str) -> bool:
@@ -402,13 +426,13 @@ def move_file(src_filepath: str, dest_filepath: str) -> bool:
     Returns:
       bool: True if move successful, False otherwise.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}move_file {Fore.YELLOW}{src_filepath} {Fore.GREEN}→ {Fore.YELLOW}{dest_filepath}")
+    tool_message_print("move_file", [("src_filepath", src_filepath), ("dest_filepath", dest_filepath)])
     try:
         shutil.move(src_filepath, dest_filepath)
-        print(f"{Fore.GREEN}File moved successfully{Style.RESET_ALL}")
+        tool_report_print("Status:", "File moved successfully")
         return True
     except Exception as e:
-        print(f"{Fore.RED}Error moving file: {e}{Style.RESET_ALL}")
+        tool_report_print("Error moving file:", str(e), is_error=True)
         return False
     
 def rename_file(filepath: str, new_filename: str) -> bool:
@@ -422,15 +446,15 @@ def rename_file(filepath: str, new_filename: str) -> bool:
     Returns:
       bool: True if rename successful, False otherwise.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}rename_file {Fore.YELLOW}{filepath} {Fore.GREEN}→ {Fore.YELLOW}{new_filename}")
+    tool_message_print("rename_file", [("filepath", filepath), ("new_filename", new_filename)])
     directory = os.path.dirname(filepath)
     new_filepath = os.path.join(directory, new_filename)
     try:
         os.rename(filepath, new_filepath)
-        print(f"{Fore.GREEN}File renamed successfully{Style.RESET_ALL}")
+        tool_report_print("Status:", "File renamed successfully")
         return True
     except Exception as e:
-        print(f"{Fore.RED}Error renaming file: {e}{Style.RESET_ALL}")
+        tool_report_print("Error renaming file:", str(e), is_error=True)
         return False
 
 def rename_directory(path: str, new_dirname: str) -> bool:
@@ -444,15 +468,15 @@ def rename_directory(path: str, new_dirname: str) -> bool:
     Returns:
       bool: True if rename successful, False otherwise.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}rename_directory {Fore.YELLOW}{path} {Fore.GREEN}→ {Fore.YELLOW}{new_dirname}")
+    tool_message_print("rename_directory", [("path", path), ("new_dirname", new_dirname)])
     parent_dir = os.path.dirname(path)
     new_path = os.path.join(parent_dir, new_dirname)
     try:
         os.rename(path, new_path)
-        print(f"{Fore.GREEN}Directory renamed successfully{Style.RESET_ALL}")
+        tool_report_print("Status:", "Directory renamed successfully")
         return True
     except Exception as e:
-        print(f"{Fore.RED}Error renaming directory: {e}{Style.RESET_ALL}")
+        tool_report_print("Error renaming directory:", str(e), is_error=True)
         return False
     
 
@@ -465,28 +489,27 @@ def evaluate_math_expression(expression: str) -> str:
 
     Returns: The result of the expression as a string, or an error message.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}evaluate_math_expression {Fore.YELLOW}{expression}")
+    tool_message_print("evaluate_math_expression", [("expression", expression)])
     try:
-        # Using eval() for simplicity, but be VERY CAREFUL with user input in production.
         result = eval(expression, {}, {})
-        print(f"{Fore.GREEN}Expression evaluated: {result}{Style.RESET_ALL}")
+        tool_report_print("Expression evaluated:", str(result))
         return str(result)
     except Exception as e:
-        print(f"{Fore.RED}Error evaluating math expression: {e}{Style.RESET_ALL}")
+        tool_report_print("Error evaluating math expression:", str(e), is_error=True)
         return f"Error evaluating math expression: {e}"
 
 def get_current_datetime() -> str:
     """
-    Get the current time and date. Also prints it.
+    Get the current time and date.
 
     Returns: A string representing the current time and date.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_current_datetime")
+    tool_message_print("get_current_datetime")
     now = datetime.datetime.now()
     time_str = now.strftime("%Y-%m-%d %H:%M:%S")
     return time_str
 
-def run_shell_command(command: str, blocking: bool) -> str | None:
+def run_shell_command(command: str, blocking: bool, print_output: bool = False) -> str | None:
     """
     Run a shell command. Use with caution as this can be dangerous.
     Can be used for command line commands, running programs, opening files using other programs, etc.
@@ -494,12 +517,13 @@ def run_shell_command(command: str, blocking: bool) -> str | None:
     Args:
       command: The shell command to execute.
       blocking: If True, waits for command to complete. If False, runs in background (Default True).
+      print_output: If True, prints the output of the command for the user to see(Default False).
 
     Returns: 
       If blocking=True: The output of the command as a string, or an error message.
       If blocking=False: None (command runs in background)
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}run_shell_command(blocking={blocking}) {Fore.YELLOW}{command}")
+    tool_message_print("run_shell_command", [("command", command), ("blocking", str(blocking)), ("print_output", str(print_output))])
     
     def _run_command():
         try:
@@ -512,13 +536,15 @@ def run_shell_command(command: str, blocking: bool) -> str | None:
             )
             stdout, stderr = process.communicate()
             if stderr:
-                print(f"{Fore.RED}Error running command: {stderr}{Style.RESET_ALL}")
+                tool_report_print("Error running command:", stderr, is_error=True)
                 return f"Error running command: {stderr}"
-            print(f"{Fore.GREEN}Command executed successfully{Style.RESET_ALL}")
-            return stdout.strip()  # remove trailing whitespace
-
+            tool_report_print("Status:", "Command executed successfully")
+            if print_output:
+                print(stdout)
+            return stdout.strip() 
+        
         except Exception as e:
-            print(f"{Fore.RED}Error running shell command: {e}{Style.RESET_ALL}")
+            tool_report_print("Error running shell command:", str(e), is_error=True)
             return f"Error running shell command: {e}"
 
     if blocking:
@@ -536,7 +562,7 @@ def get_system_info() -> str:
 
     Returns: A string containing system information.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_system_info")
+    tool_message_print("get_system_info")
     system_info = {
         "system": platform.system(),
         "node_name": platform.node(),
@@ -556,15 +582,14 @@ def open_url(url: str) -> bool:
 
     Returns: True if URL opened successfully, False otherwise.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}open_url {Fore.YELLOW}{url}")
+    tool_message_print("open_url", [("url", url)])
     try:
         webbrowser.open(url)
-        print(f"{Fore.GREEN}URL opened successfully{Style.RESET_ALL}")
+        tool_report_print("Status:", "URL opened successfully")
         return True
     except Exception as e:
-        print(f"{Fore.RED}Error opening URL: {e}{Style.RESET_ALL}")
+        tool_report_print("Error opening URL:", str(e), is_error=True)
         return False
-    
     
 def get_website_text_content(url: str) -> str:
     """
@@ -577,20 +602,20 @@ def get_website_text_content(url: str) -> str:
 
     Returns: The text content of the website in markdown format, or an error message.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_website_text_content {Fore.YELLOW}{url}")
+    tool_message_print("get_website_text_content", [("url", url)])
     try:
         base = "https://md.dhr.wtf/?url="
         response = requests.get(base+url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'})
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
         soup = BeautifulSoup(response.content, 'lxml')
         text_content = soup.get_text(separator='\n', strip=True) 
-        print(f"{Fore.GREEN}Webpage content fetched successfully{Style.RESET_ALL}")
+        tool_report_print("Status:", "Webpage content fetched successfully")
         return text_content
     except requests.exceptions.RequestException as e:
-        print(f"{Fore.RED}Error fetching webpage content: {e}{Style.RESET_ALL}")
+        tool_report_print("Error fetching webpage content:", str(e), is_error=True)
         return f"Error fetching webpage content: {e}"
     except Exception as e:
-        print(f"{Fore.RED}Error fetching webpage content: {e}{Style.RESET_ALL}")
+        tool_report_print("Error processing webpage content:", str(e), is_error=True)
         return f"Error processing webpage content: {e}"
     
 def http_get_request(url: str) -> str:
@@ -602,17 +627,17 @@ def http_get_request(url: str) -> str:
 
     Returns: The response from the server as a string, or an error message.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}http_get_request {Fore.YELLOW}{url}")
+    tool_message_print("http_get_request", [("url", url)])
     try:
         response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'})
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-        print(f"{Fore.GREEN}HTTP GET request sent successfully{Style.RESET_ALL}")
+        tool_report_print("Status:", "HTTP GET request sent successfully")
         return response.text
     except requests.exceptions.RequestException as e:
-        print(f"{Fore.RED}Error sending HTTP GET request: {e}{Style.RESET_ALL}")
+        tool_report_print("Error sending HTTP GET request:", str(e), is_error=True)
         return f"Error sending HTTP GET request: {e}"
     except Exception as e:
-        print(f"{Fore.RED}Error sending HTTP GET request: {e}{Style.RESET_ALL}")
+        tool_report_print("Error processing HTTP GET request:", str(e), is_error=True)
         return f"Error processing HTTP GET request: {e}"
 
 def to_mb(size):
@@ -658,11 +683,10 @@ def progress_function(dl: Pypdl):
     with Live(Panel(Text(update_progress(), justify="left")), console=console, screen=False, redirect_stderr=False, redirect_stdout=False) as live:
         while not dl.completed:
             live.update(Panel(Text(update_progress(), justify="left")))
-            import time
             time.sleep(0.1)
 
 def resolve_filename_from_url(url: str) -> str | None:
-    print(f"{Fore.CYAN}Resolving filename from URL {Fore.YELLOW}{url}")
+    tool_message_print("resolve_filename_from_url", [("url", url)])
     
     try:
         # filename from the Content-Disposition header
@@ -746,34 +770,18 @@ def download_file_from_url(url: str, download_path: str | None) -> str:
         
         os.makedirs(os.path.dirname(os.path.abspath(final_path)), exist_ok=True)
             
-        print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}download_file_from_url {Fore.YELLOW}{url} -> {final_path}")
+        tool_message_print("download_file_from_url", [("url", url), ("final_path", final_path)])
         
         dl = Pypdl()
         dl.start(url, final_path, display=False, block=False)
         progress_function(dl)
         return f"File downloaded successfully to {final_path}"
     except requests.exceptions.RequestException as e:
-        print(f"{Fore.RED}Error downloading file: {e}{Style.RESET_ALL}")
+        tool_report_print("Error downloading file:", str(e), is_error=True)
         return f"Error downloading file: {e}"
     except Exception as e:
-        print(f"{Fore.RED}Error downloading file: {e}{Style.RESET_ALL}")
+        tool_report_print("Error downloading file:", str(e), is_error=True)
         return f"Error downloading file: {e}"
-
-
-def screenshot() -> FunctionResponse:
-    """Takes a screenshot and returns the image"""
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}screenshot")
-    try:
-        img = ImageGrab.grab()
-        img.save("test.png")
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        img_bytes = buffered.getvalue()
-        return FunctionResponse(id="screenshot", name="screenshot", response={"output": Image(image_bytes=img_bytes, mime_type="image/png")})
-    except Exception as e:
-        print(f"{Fore.RED}Error taking screenshot: {e}{Style.RESET_ALL}")
-        return FunctionResponse(id="screenshot", name="screenshot", response={"error": str(e)})
-    
 
 def write_note(message: str):
     """
@@ -784,7 +792,7 @@ def write_note(message: str):
 
     These notes will be preloaded the next time you are started
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.YELLOW}write_note")
+    tool_message_print("write_note")
     with open("ai-log.txt", "a+") as f:
         f.write(message +"\n")
 
@@ -794,7 +802,7 @@ def read_note() -> str:
 
     Returns: string of previously saved log notes
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.YELLOW}read_note")
+    tool_message_print("read_note")
     if os.path.exists("./ai-log.txt"):
         with open("ai-log.txt", "r", encoding="utf-8") as f:
             return f.read()
@@ -811,16 +819,16 @@ def zip_archive_files(file_name: str, files: list[str]) -> str:
 
     Returns: The path to the zip file.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.YELLOW}zip_files")
+    tool_message_print("zip_archive_files", [("file_name", file_name), ("files", str(files))])
     try:
         with zipfile.ZipFile(file_name, "w") as zipf:
             for file in files:
                 # Add file to zip with just its basename to avoid including full path
                 zipf.write(file, arcname=os.path.basename(file))
-        print(f"{Fore.GREEN}Files zipped successfully{Style.RESET_ALL}")
+        tool_report_print("Status:", "Files zipped successfully")
         return file_name
     except Exception as e:
-        print(f"{Fore.RED}Error zipping files: {e}{Style.RESET_ALL}")
+        tool_report_print("Error zipping files:", str(e), is_error=True)
         return f"Error zipping files: {e}"
 
 def zip_extract_files(zip_file: str, extract_path: str | None) -> list[str]:
@@ -833,7 +841,7 @@ def zip_extract_files(zip_file: str, extract_path: str | None) -> list[str]:
 
     Returns: A list of paths to the extracted files.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}zip_extract_files {Fore.YELLOW}{zip_file}")
+    tool_message_print("zip_extract_files", [("zip_file", zip_file), ("extract_path", str(extract_path))])
     try:
         if extract_path is None:
             extract_path = os.getcwd()
@@ -847,10 +855,10 @@ def zip_extract_files(zip_file: str, extract_path: str | None) -> list[str]:
             # Get list of all extracted files
             extracted_files = [os.path.join(extract_path, filename) for filename in zipf.namelist()]
         
-        print(f"{Fore.GREEN}Files extracted successfully to {extract_path}{Style.RESET_ALL}")
+        tool_report_print("Status:", f"Files extracted successfully to {extract_path}")
         return extracted_files
     except Exception as e:
-        print(f"{Fore.RED}Error extracting zip file: {e}{Style.RESET_ALL}")
+        tool_report_print("Error extracting zip file:", str(e), is_error=True)
         return f"Error extracting zip file: {e}"
 
 def get_environment_variable(key: str) -> str:
@@ -864,12 +872,12 @@ def get_environment_variable(key: str) -> str:
 
     Returns: The value of the environment variable, or error message if the variable is not set.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_environment_variable")
+    tool_message_print("get_environment_variable", [("key", key)])
     try:
         value = os.getenv(key)
         return value
     except Exception as e:
-        print(f"{Fore.RED}Error retrieving environment variable '{key}': {e}{Style.RESET_ALL}")
+        tool_report_print("Error retrieving environment variable:", str(e), is_error=True)
         return f"Error retrieving environment variable {e}"
 
 
@@ -889,7 +897,7 @@ def reddit_search(subreddit: str, sorting: str, query: str | None =None) -> dict
 
     Returns: A list of JSON data with information containing submission_id, title, text (if any), number of comments, name of subreddit, upvote_ratio, url   
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}reddit_search {Fore.YELLOW} [query={query}] [subreddit={subreddit}] [sort={sorting}]")
+    tool_message_print("reddit_search", [("query", query), ("subreddit", subreddit), ("sorting", sorting)])
     if sorting not in ('relevance', 'hot', 'top', 'new', 'comments'):
         print(f"{Fore.RED}Failed to search reddit: invalid sorting {Style.RESET_ALL}")
         return "Invalid sorting, must contain either of these: 'relevance', 'hot', 'top', 'new' or 'comments'"
@@ -923,7 +931,7 @@ def reddit_search(subreddit: str, sorting: str, query: str | None =None) -> dict
             "upvote_ratio": s.upvote_ratio or "N/A"
         })
 
-    print(f"{Fore.CYAN}  ├─Fetched {len(results)} reddit results.")
+    tool_report_print("Fetched:", f"{len(results)} reddit results.")
     return results
 
 def get_reddit_post(submission_id: str) -> dict:
@@ -937,7 +945,7 @@ def get_reddit_post(submission_id: str) -> dict:
     Returns: A JSON data of the comments including authors name and the body of the reddit post
     """
 
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_reddit_post {Fore.YELLOW}{submission_id}")
+    tool_message_print("get_reddit_post", [("submission_id", submission_id)])
 
     try:
         s = reddit.submission(submission_id)
@@ -957,7 +965,7 @@ def get_reddit_post(submission_id: str) -> dict:
             "upvote_ratio": s.upvote_ratio or "N/A"
         }
     except Exception as e:
-        print(f"{Fore.RED}Error getting reddit post: {e}{Style.RESET_ALL}")
+        tool_report_print("Error getting reddit post:", str(e), is_error=True)
         return f"Error getting reddit post: {e}"
         
     return result
@@ -974,7 +982,7 @@ def reddit_submission_comments(submission_url: str) -> dict:
 
     Returns: A JSON data of the comments including authors name and the body of the reddit post
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}reddit_submission_comments")
+    tool_message_print("reddit_submission_comments", [("submission_url", submission_url)])
 
     submission = reddit.submission(submission_url)
     if not submission:
@@ -1006,9 +1014,11 @@ def find_files(pattern: str, directory: str = ".", recursive: bool = False, incl
         A list of file paths that match the pattern.  Returns an empty list if no matches are found.
         Returns an appropriate error message if the directory does not exist or is not accessible.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}find_files {Fore.YELLOW}{pattern} {Fore.YELLOW}{directory}")
+    tool_message_print("find_files", [("pattern", pattern), ("directory", directory), 
+                                      ("recursive", str(recursive)), ("include_hidden", str(include_hidden))])
     try:
         if not os.path.isdir(directory):
+            tool_report_print("Error:", f"Directory '{directory}' not found.", is_error=True)
             return f"Error: Directory '{directory}' not found."  # Clear error message
 
         full_pattern = os.path.join(directory, pattern)  # Combine directory and pattern
@@ -1016,11 +1026,14 @@ def find_files(pattern: str, directory: str = ".", recursive: bool = False, incl
 
         # Check if the list is empty and return a message.
         if not matches:
+            tool_report_print("Status:", "No files found matching the criteria.")
             return "No files found matching the criteria."
 
+        tool_report_print("Status:", f"Found {len(matches)} matching files")
         return matches  # Return the list of matching file paths
 
     except OSError as e:
+        tool_report_print("Error:", str(e), is_error=True)
         return f"Error: {e}"  # Return the system error message
 
 def get_wikipedia_summary(page: str) -> str:
@@ -1032,13 +1045,13 @@ def get_wikipedia_summary(page: str) -> str:
 
     Returns: A summary of the Wikipedia page
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_wikipedia_summary {Fore.YELLOW}{page}")
+    tool_message_print("get_wikipedia_summary", [("page", page)])
     try:
         if page.startswith("https"):
             page = page.split("wiki/")[1]
         return wikipedia.summary(page)
     except Exception as e:
-        print(f"{Fore.RED}Error getting Wikipedia summary: {e}{Style.RESET_ALL}")
+        tool_report_print("Error getting Wikipedia summary:", str(e), is_error=True)
         return f"Error getting Wikipedia summary: {e}"
 
 def search_wikipedia(query: str) -> list:
@@ -1050,11 +1063,12 @@ def search_wikipedia(query: str) -> list:
 
     Returns: A list of Wikipedia search results
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}search_wikipedia {Fore.YELLOW}{query}")
+    tool_message_print("search_wikipedia", [("query", query)])
     try:
         return wikipedia.search(query)
     except Exception as e:
-        print(f"{Fore.RED}Error searching Wikipedia: {e}{Style.RESET_ALL}")
+        tool_report_print("Error searching Wikipedia:", str(e), is_error=True)
+        return f"Error searching Wikipedia: {e}"
 
 def get_full_wikipedia_page(page: str) -> str:
     """
@@ -1066,15 +1080,15 @@ def get_full_wikipedia_page(page: str) -> str:
 
     Returns: A full Wikipedia page
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}get_full_wikipedia_page {Fore.YELLOW}{page}")
+    tool_message_print("get_full_wikipedia_page", [("page", page)])
     try:
         if page.startswith("https"):
             page = page.split("wiki/")[1]
-        page =  wikipedia.page(page)
+        page = wikipedia.page(page)
         content = f"Title: {page.title}\nUrl:{page.url}\n{page.content}"
         return content
     except Exception as e:
-        print(f"{Fore.RED}Error getting Wikipedia page: {e}{Style.RESET_ALL}")
+        tool_report_print("Error getting Wikipedia page:", str(e), is_error=True)
         return f"Error getting Wikipedia page: {e}"
 
 # This is to help the assistant possibly fixing it hellucinating some functions
@@ -1090,7 +1104,7 @@ def find_tools(query: str) -> list[str]:
     Returns:
         A list of tool names and doc that match the query.
     """
-    print(f"{Fore.CYAN}[TOOL]{Style.RESET_ALL} {Fore.WHITE}find_tools {Fore.YELLOW}{query}")
+    tool_message_print("find_tools", [("query", query)])
     # TOOLS variable is defined later
     tools = [tool.__name__ for tool in TOOLS]
     best_matchs = thefuzz.process.extractBests(query, tools) # [(tool_name, score), ...]

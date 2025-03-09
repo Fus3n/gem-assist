@@ -22,9 +22,10 @@ A short disclaimer this was originally made to be my personal assistant so it mi
     *   And more!
 *   **Customizable:**  Easily configure the assistant's behavior and extend its capabilities with new tools.
 *   **Simple Chat Interface:** Interact with the assistant through a straightforward command-line chat interface.
-*   **Memory:** Can save notes between converstaion and remember them.
+*   **Memory:** Can save notes between conversation and remember them.
+*   **Saving Conversation:** Save and load previous conversations.
 *   **Commands:** Supports creating/executing (code), use `/commands` for more information.
-*   **Extension:** For now you are required to write some code to extend its capabilites like adding commands to `CommandExecutor` or making new tools, there should be enough exmaple in `gem/builtin_commands.py` for commands and `utility.py` for tools
+*   **Extension:** For now you are required to write some code to extend its capabilities like adding commands to `CommandExecutor` or making new tools, there should be enough examples in `gem/builtin_commands.py` for commands and `utility.py` for tools
 
 ## Getting Started
 
@@ -54,7 +55,7 @@ uv sync
     *   Create a `.env` file in the project root.
     *   Add your Google Cloud API key:
         ```
-        GEMINI_API_KEY=YOUR_API_KEY
+        GEMINI_API_KEY=YOUR_API_KEY # or any other API key with proper key name, if used
         REDDIT_ID=YOUR_REDDIT_CLIENT_ID # (Optional, for Reddit tools)
         REDDIT_SECRET=YOUR_REDDIT_CLIENT_SECRET # (Optional, for Reddit tools)
         ```
@@ -67,7 +68,7 @@ Run the `assistant.py` script to start the chat interface:
 uv run assistant.py
 ```
 
-Ignore `gem_assist_old.py` and `ollama_assist_old.py`
+Ignore `ollama_assist_old.py`
 
 You can then interact with Gemini by typing commands in the chat.  Type `exit`, `quit`, or `bye` to close the chat.
 
@@ -75,9 +76,11 @@ You can then interact with Gemini by typing commands in the chat.  Type `exit`, 
 
 The main configuration file is `config.py`. Here you can customize:
 
-*   **`MODEL`**:  Choose the Gemini model to use (e.g., `"gemini/gemini-2.0-flash"`, `"gemini/gemini-2.0-pro-exp-02-05"`) for more models checkout: [docs.litellm.ai/docs/providers/](https://docs.litellm.ai/docs/providers/)
+*   **`MODEL`**:  Choose the Gemini model to use (e.g., `"gemini/gemini-2.0-flash"`, `"gemini/gemini-2.0-pro-exp-02-05"`) for more models checkout: [docs.litellm.ai/docs/providers/](https://docs.litellm.ai/docs/providers/), for local models its recommended to not run really small models.
 *   **`NAME`**: Set the name of your assistant.
 *   **`SYSTEM_PROMPT`**:  Modify the system prompt to adjust the assistant's personality and instructions.
+
+And more
 
 **Note:**  Restart the `assistant.py` script after making changes to `config.py`.
 
@@ -110,8 +113,6 @@ The project dependencies are managed by UV and listed in `pyproject.toml`. Key d
 
 *   **Web Interaction:**  Web interaction tools may not work as expected due to rate limits and other issues.
 *   **File download tool:** Might not show progress or filename (if not explicitly provided) correctly if file download endpoint is dynamic
-*   **Multi Turn tool calling:** Sometimes when AI calls multiple tools if each tools returns huge amount of data it could break it sometimes
-
 
 ## License
 

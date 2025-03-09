@@ -22,6 +22,7 @@ Example:
 """
 
 from typing import Callable, Any, Dict
+from rich import print
 
 class InvalidCommand(Exception):
     pass
@@ -35,7 +36,8 @@ def cmd(aliases: list[str], help_msg: str = ""):
     A decorator to mark a function as a command.
 
     Args:
-        help: A string describing what the command does. This will be shown in a help message.
+        aliases: A list of strings representing the aliases for the command.
+        help_msg: A string describing what the command does. This will be shown in a help message.
     """
     if not isinstance(aliases, list):
         raise TypeError("aliases must be a list")
@@ -123,7 +125,7 @@ class CommandExecuter:
             raise CommandNotFound(f"Command not found: {command_name}")
 
         if len(command_args) > 0 and command_args[0] == "?":
-            print(command_to_call.help, end="\n\n" if command_to_call.help else "")
+            print(command_to_call.help)
             print(command_to_call.__doc__ or "") 
             return None
 
@@ -135,6 +137,6 @@ class CommandExecuter:
         command_func = CommandExecuter.__available_commands.get(command_name)
         if command_func:
             help_text = getattr(command_func, "help", "")
-            help_text += "\n\t" + command_func.__doc__ or ""
+            help_text += "  " + command_func.__doc__ or ""
             return help_text
         return None

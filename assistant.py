@@ -1,6 +1,7 @@
 import inspect
 import json
 import os
+import platform
 from typing import Callable
 import traceback
 from typing import Union
@@ -8,14 +9,16 @@ import colorama
 from pydantic import BaseModel
 import litellm
 from utility import TOOLS
+import pickle
 
-from colorama import Fore, Style
+from colorama import Back, Fore, Style
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.pretty import pprint
 import config as conf
 
 from func_to_schema import function_to_json_schema
-from gem.command import InvalidCommand, CommandNotFound, CommandExecuter
+from gem.command import InvalidCommand, CommandNotFound, CommandExecuter, cmd
 import gem
 
 from dotenv import load_dotenv
@@ -52,7 +55,8 @@ class Assistant:
     def print_ai(self, msg: str):
         print(f"{Fore.YELLOW}┌{'─' * 58}┐{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}│ {Fore.GREEN}{self.name}:{Style.RESET_ALL} ", end="")
-        self.console.print(Markdown(msg.strip() if msg else ""))
+        self.console.print(Markdown(msg.strip() if msg else ""), end="", soft_wrap=True, no_wrap=False)
+        print(f"{Fore.YELLOW}└{'─' * 58}┘{Style.RESET_ALL}")
 
     def get_completion(self):
         """Get a completion from the model with the current messages and tools and process the response."""
@@ -79,6 +83,42 @@ class Assistant:
                 "content": str(content),
             }
         )
+
+    @cmd(["save"], "Saves the current chat session to pickle file.")                                                                                                      
+    def save_session(self, name: str, filepath=f"chats"):
+        """
+        Args:
+            name: The name of the file to save the session to. (can be either with or without json extension)
+            filepath: The path to the directory to save the file to. (default: "/chats")
+        """
+        try:
+            # create directory if default path doesn't exist
+            if filepath == "chats": os.makedirs(filepath, exist_ok=True)
+
+            final_path = os.path.join(filepath, name + ".pkl")
+            with open(final_path, "wb") as f:
+                pickle.dump(self.messages, f)
+
+            print(f"{Fore.GREEN}Chat session saved to {Fore.BLUE}{final_path}{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
+
+    @cmd(["load"], "Loads a chat session from a pickle file. Resets the session.")                                                                                                     
+    def load_session(self, name: str, filepath=f"chats"):
+        """
+        Args:
+            name: The name of the file to load the session from. (can be either with or without json extension)
+            filepath: The path to the directory to load the file from. (default: "/chats")
+        """
+        try:
+            final_path = os.path.join(filepath, name + ".pkl")
+            with open(final_path, "rb") as f:
+                self.messages = pickle.load(f)
+            print(f"{Fore.GREEN}Chat session loaded from {Fore.BLUE}{final_path}{Style.RESET_ALL}")
+        except FileNotFoundError:
+            print(f"{Fore.RED}Chat session not found{Style.RESET_ALL} {Fore.BLUE}{final_path}{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
 
     def convert_to_pydantic_model(self, annotation, arg_value):
         """
@@ -115,13 +155,13 @@ class Assistant:
         tool_calls = response_message.tool_calls
 
         self.messages.append(response_message) 
-        final_response = None
+        final_response = response_message
 
         # Multi-turn parallel tool calling
         # This will keep checking for tool calls and will call them
         # if any tools return an error it will be sent back to the AI
         try:
-            while tool_calls:
+            if tool_calls:
                 for tool_call in tool_calls:
                     function_name = tool_call.function.name
 
@@ -142,6 +182,8 @@ class Assistant:
 
                     try:
                         function_response = function_to_call(**function_args)
+                        if final_response.content:
+                            print(f"{Fore.YELLOW}│ {Fore.GREEN}{self.name}:{Style.RESET_ALL} {Style.DIM}{Fore.WHITE}{final_response.content.strip()}{Style.RESET_ALL}{Style.RESET_ALL}")
                         # response of tool
                         self.add_toolcall_output(tool_call.id, function_name, function_response)
                     except Exception as e:
@@ -160,20 +202,22 @@ class Assistant:
                 ) 
 
                 tool_calls = final_response.choices[0].message.tool_calls
+                # if no more tool calls end and return
                 if not tool_calls:
                     response_message = final_response.choices[0].message
                     self.messages.append(response_message) 
-                    break
+                    if print_response:
+                        self.print_ai(response_message.content)
+                    return response_message
+            else:
+                if print_response:
+                    self.print_ai(response_message.content)
+                return response_message
 
-                self.messages.append(final_response.choices[0].message) 
-
-            if print_response:
-                self.print_ai(response_message.content)
-            
-            return response_message
+            # if there are more tool calls
+            return self.__process_response(final_response, print_response=print_response)
         except Exception as e:
             print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
-            
 
 if __name__ == "__main__":
     colorama.init(autoreset=True)
@@ -185,13 +229,24 @@ if __name__ == "__main__":
 
     sys_instruct = (conf.get_system_prompt() + "Here are the things previously saved on your notes:\n" + notes).strip()
     
-    # handle commands
-    command = gem.CommandExecuter.register_commands(gem.builtin_commands.COMMANDS)
-    # set command prefix (default is /)
-    # CommandExecuter.command_prefix = "/"
-
     assistant = Assistant(model=conf.MODEL, system_instruction=sys_instruct, tools=TOOLS)
     
+    # handle commands
+    command = gem.CommandExecuter.register_commands(gem.builtin_commands.COMMANDS + [assistant.save_session, assistant.load_session]) 
+    # set command prefix (default is /)
+    # CommandExecuter.command_prefix = "/"
+    
+    if conf.CLEAR_BEFORE_START:
+        os.system("cls" if platform.system() == "Windows" else "clear")
+        
+    width = 60
+    title = f" {conf.NAME} CHAT INTERFACE "
+    padding = (width - len(title)) // 2
+    
+    print(f"\n{Back.BLUE}{Fore.WHITE}┌{'─' * width}┐{Style.RESET_ALL}")
+    print(f"{Back.BLUE}{Fore.WHITE}│{' ' * padding}{title}{' ' * (width - len(title) - padding)}│{Style.RESET_ALL}")
+    print(f"{Back.BLUE}{Fore.WHITE}└{'─' * width}┘{Style.RESET_ALL}\n")
+
     while True:
         try:
             print(f"{Fore.CYAN}┌{'─' * 58}┐{Style.RESET_ALL}")

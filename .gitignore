@@ -12,6 +12,7 @@ wheels/
 .venv
 .env
 
+chats
 ai-log.txt
 
 uv.lock

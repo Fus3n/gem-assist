@@ -20,12 +20,17 @@ MODEL = "gemini/gemini-2.0-flash"
 # The assistants name
 NAME = "Gemini"
 
-# Parameters (None means default)
+# Model Parameters (None means default)
 
 TEMPERATURE = 0.25
 TOP_P = None
 MAX_TOKENS = None
 SEED = None
+
+# Script parameters
+
+# Whether to clear the console before starting
+CLEAR_BEFORE_START = True
 
 
 def get_location_info():

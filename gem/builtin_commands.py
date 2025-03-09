@@ -1,4 +1,5 @@
 from .command import cmd, CommandExecuter
+from rich import print
 
 @cmd(["exit", "quit", "bye"], "Exit the chat")
 def exit_chat():    
