@@ -32,7 +32,7 @@ A short disclaimer this was originally made to be my personal assistant so it mi
 
 - Python 3.11 or higher
 - uv (for dependency management) - [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/)
-- Google Gemini API key - [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- Google Gemini API key (if using gemini) - [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey) or check out [docs.litellm.ai/docs/providers/](https://docs.litellm.ai/docs/providers/) for more models
 
 ### Installation
 
