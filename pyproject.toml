@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
+
 dependencies = [
     "beautifulsoup4>=4.13.3",
     "bs4>=0.0.2",
@@ -22,4 +23,9 @@ dependencies = [
     "thefuzz>=0.22.1",
     "wikipedia>=1.4.0",
     "wmi>=1.5.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
 ]

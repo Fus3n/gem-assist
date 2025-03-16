@@ -12,6 +12,8 @@ wheels/
 .venv
 .env
 
+.pytest_cache
+
 chats
 ai-log.txt
 

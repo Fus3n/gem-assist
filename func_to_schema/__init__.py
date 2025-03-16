@@ -14,7 +14,7 @@ from typing import Any, Dict, get_type_hints, get_origin, get_args, Literal, Cal
 import docstring_parser
 from pydantic import BaseModel
 import warnings
-
+import re
 
 def function_to_json_schema(func: Callable) -> Dict[str, Any]:
     """
@@ -47,11 +47,15 @@ def function_to_json_schema(func: Callable) -> Dict[str, Any]:
 
         parameters[param_name] = param_info
 
+    doc_str_desc = docstring.description
+    if doc_str_desc:
+        doc_str_desc = re.sub(r'\s+', ' ', doc_str_desc).strip()
+
     json_schema = {
         "type": "function",
         "function": {
             "name": func.__name__,
-            "description": docstring.description or "",
+            "description": doc_str_desc or "",
         }
     }
 

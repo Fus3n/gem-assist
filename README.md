@@ -97,6 +97,12 @@ gem-assist comes with a set of built-in tools that you can use in your conversat
 
 **And much more!**
 
+## Testing
+To run tests, use:
+```bash
+uv run pytest tests/
+```
+
 ## Dependencies
 
 The project dependencies are managed by UV and listed in `pyproject.toml`. Key dependencies include:
@@ -115,7 +121,7 @@ All contributions are welcome! Please fork the repository and create a pull requ
 ## Known Issues
 
 - **Web Interaction:** Web interaction tools may not work as expected due to rate limits and other issues.
-- **File download tool:** Might not show progress or filename (if not explicitly provided) correctly if file download endpoint is dynamic
+- **File download tool:** Might not show progress or filename(if not explicitly provided) correctly if file download endpoint is dynamic
 
 ## License
 
