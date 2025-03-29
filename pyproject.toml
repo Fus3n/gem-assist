@@ -23,7 +23,7 @@ dependencies = [
     "rich>=13.9.4",
     "thefuzz>=0.22.1",
     "wikipedia>=1.4.0",
-    "wmi>=1.5.1",
+    "wmi>=1.5.1; sys_platform == 'win32'",
 ]
 
 [dependency-groups]

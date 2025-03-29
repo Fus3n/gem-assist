@@ -11,7 +11,6 @@ import requests
 from bs4 import BeautifulSoup
 import psutil
 import thefuzz.process
-import wmi
 import json
 
 import praw
@@ -185,7 +184,8 @@ def get_drives() -> list[dict]:
     os_type = platform.system()
 
     if os_type == "Windows":
-        c = wmi.WMI()
+        from wmi import WMI
+        c = WMI()
         for drive in c.Win32_LogicalDisk():
             drive_type_map = {
                 0: "Unknown",
