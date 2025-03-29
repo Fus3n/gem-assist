@@ -95,6 +95,10 @@ class CommandExecuter:
         return CommandExecuter.__available_commands
 
     @staticmethod
+    def get_command_names() -> list[str]:
+        return list(CommandExecuter.__available_commands.keys())
+
+    @staticmethod
     def execute(command: str) -> Any | None:
         """Executes a command.
 

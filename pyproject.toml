@@ -16,6 +16,7 @@ dependencies = [
     "ollama>=0.4.7",
     "pillow>=11.1.0",
     "praw>=7.8.1",
+    "prompt-toolkit>=3.0.50",
     "psutil>=7.0.0",
     "pypdl>=1.5.2",
     "python-dotenv>=1.0.1",

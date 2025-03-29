@@ -15,6 +15,11 @@ from rich.console import Console
 from rich.markdown import Markdown
 import config as conf
 
+from prompt_toolkit import PromptSession
+from prompt_toolkit.styles import Style as PromptToolkitStyle
+from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+
 from func_to_schema import function_to_json_schema
 from gem.command import InvalidCommand, CommandNotFound, CommandExecuter, cmd
 import gem
@@ -268,17 +273,42 @@ if __name__ == "__main__":
     command = gem.CommandExecuter.register_commands(
         gem.builtin_commands.COMMANDS + [assistant.save_session, assistant.load_session, assistant.reset_session]
     )
+    COMMAND_PREFIX = "/"
     # set command prefix (default is /)
-    # CommandExecuter.command_prefix = "/"
+    CommandExecuter.command_prefix = COMMAND_PREFIX
 
     if conf.CLEAR_BEFORE_START:
         gem.clear_screen()
+
+
+    # Customize autocomplete style
+    custom_style = PromptToolkitStyle.from_dict({
+        "prompt": "fg:ansiblue", 
+        "completion-menu": "bg:ansiblack fg:ansigreen",
+        "completion-menu.completion": "bg:ansiblack fg:ansiblue",  
+        "completion-menu.completion.current": "bg:ansigray fg:ansipurple", 
+    })
+
+    session = PromptSession(
+        completer=gem.SlashCompleter([COMMAND_PREFIX + name for name in CommandExecuter.get_command_names()]),
+        complete_while_typing=True, 
+        auto_suggest=AutoSuggestFromHistory(),
+        style=custom_style  
+    )
+
+    prompt_text = FormattedText([
+        ("fg:ansicyan", "│ "),    
+        ("fg:ansimagenta", "You: "), 
+        ("", "")
+    ])
 
     gem.print_header(f"{conf.NAME} CHAT INTERFACE")
     while True:
         try:
             print(f"{Fore.CYAN}┌{'─' * 58}┐{Style.RESET_ALL}")
-            msg = input(f"{Fore.CYAN}│ {Fore.MAGENTA}You:{Style.RESET_ALL} ")
+            # msg = input("f{Fore.CYAN}│ {Fore.MAGENTA}You:{Style.RESET_ALL} ")
+            # msg = session.prompt()
+            msg = session.prompt(prompt_text)
             print(f"{Fore.CYAN}└{'─' * 58}┘{Style.RESET_ALL}")
 
             if not msg:
