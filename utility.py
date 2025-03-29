@@ -34,6 +34,7 @@ import time
 
 import config as conf
 from gem import seconds_to_hms, bytes_to_mb, format_size
+from gem.inspection import inspect_script, get_func_source_code
 
 load_dotenv()
 
@@ -1135,6 +1136,91 @@ def find_tools(query: str) -> list[str]:
         if match[1] > 60 # only return tools with a score above 60
     ]
 
+def read_file_at_specific_line_range(file_path: str, start_line: int, end_line: int) -> str:
+    """
+    Read a range of lines from a file (inclusive).
+    If end_line exceeds the file length, it reads up to the last line.
+    can read single line by passing same start_line and end_line
+
+    Args:
+        file_path: The path to the file.
+        start_line: The number of the first line to read (must be valid).
+        end_line: The number of the last line to read.
+
+    Returns:
+        The content of the lines, or an error message if start_line is invalid
+        or if start_line > end_line.
+    """
+    tool_message_print("read_file_at_specific_line_range", [("file_path", file_path), ("start_line", start_line), ("end_line", end_line)])
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+        num_lines = len(lines)
+
+        if start_line < 1 or start_line > num_lines:
+            return f"Error: Start line ({start_line}) is out of range (File has {num_lines} lines)."
+
+        if start_line > end_line:
+             return f"Error: Start line ({start_line}) cannot be greater than end line ({end_line})."
+
+       
+        selected_lines = lines[start_line - 1:end_line]
+        return "\n".join(selected_lines).strip() 
+    except FileNotFoundError:
+        return f"File not found: {file_path}"
+    except Exception as e:
+        tool_report_print("Error reading file:", str(e), is_error=True)
+        return f"Error reading file: {e}"
+
+# Python script inspection
+def inspect_python_script(filepath: str) -> list[str]:
+    """
+    Parses a Python file and returns details about
+    its imports, classes, and functions/methods.
+
+    Args:
+        filepath: The path to the Python script.
+
+    Returns:
+        A list of dict containg function details.
+    """
+    tool_message_print("inspect_python_script", [("filepath", filepath)])
+    try:
+        return inspect_script(filepath)
+    except FileNotFoundError:
+        tool_report_print("File not found:", filepath, is_error=True)
+        return "File not found"
+    except SyntaxError:
+        tool_report_print("Syntax error in file:", filepath, is_error=True)
+        return "Syntax error in file"
+    except Exception as e:
+        tool_report_print("Error getting function details:", str(e), is_error=True)
+        return []
+    
+def get_python_function_source_code(filepath: str, function_name: str) -> str:
+    """
+    Returns the source code of a specific function.
+
+    Args:
+        filepath: The path to the Python script.
+        function_name: The name of the function.
+
+    Returns:
+        The source code of the function.
+    """
+    tool_message_print("get_python_function_source_code", [("filepath", filepath), ("function_name", function_name)])
+    try:
+        return get_func_source_code(filepath, function_name)
+    except FileNotFoundError:
+        tool_report_print("File not found:", filepath, is_error=True)
+        return "File not found"
+    except SyntaxError:
+        tool_report_print("Syntax error in file:", filepath, is_error=True)
+        return "Syntax error in file"
+    except Exception as e:
+        tool_report_print("Error getting function source code:", str(e), is_error=True)
+        return ""
+
 TOOLS = [
     duckduckgo_search_tool,
     reddit_search,
@@ -1150,6 +1236,7 @@ TOOLS = [
     create_directory,
     get_file_metadata,
     write_files,
+    read_file_at_specific_line_range,
     copy_file,
     move_file,
     rename_file,
@@ -1172,4 +1259,6 @@ TOOLS = [
     search_wikipedia,
     get_full_wikipedia_page,
     find_tools,
+    inspect_python_script,
+    get_python_function_source_code
 ]

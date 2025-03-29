@@ -1,15 +1,14 @@
 import inspect
 import json
 import os
-import platform
 from typing import Callable
-import traceback
 from typing import Union
 import colorama
 from pydantic import BaseModel
 import litellm
 from utility import TOOLS
 import pickle
+from litellm.exceptions import RateLimitError
 
 from colorama import Fore, Style
 from rich.console import Console
@@ -23,6 +22,7 @@ import gem
 from dotenv import load_dotenv
 
 load_dotenv()
+litellm.suppress_debug_info = True
 
 
 class Assistant:
@@ -299,6 +299,8 @@ if __name__ == "__main__":
             print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
         except CommandNotFound as e:
             print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
+        except RateLimitError as e:
+            print(f"{Fore.RED}You are being rate limited\n{e}{Style.RESET_ALL}")
         except Exception as e:
             print(f"{Fore.RED}An error occurred: {e}{Style.RESET_ALL}")
-            traceback.print_exc()
+            # traceback.print_exc()

@@ -123,6 +123,12 @@ All contributions are welcome! Please fork the repository and create a pull requ
 - **Web Interaction:** Web interaction tools may not work as expected due to rate limits and other issues.
 - **File download tool:** Might not show progress or filename(if not explicitly provided) correctly if file download endpoint is dynamic
 
+# FAQ
+
+### Why does it has so many seperate tools?
+
+Because I think it does way better when there is one tool for one thing and it can just choose instead of one tool doing multiple things.
+
 ## License
 
 This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.
