@@ -1,5 +1,7 @@
 import warnings
 
+import rich.markdown
+
 warnings.filterwarnings(
     "ignore",
     category=UserWarning,
@@ -10,6 +12,7 @@ warnings.filterwarnings(
 import inspect
 import json
 import os
+import pprint
 from typing import Callable
 from typing import Union
 import colorama
@@ -28,6 +31,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style as PromptToolkitStyle
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from halo import Halo
 
 from func_to_schema import function_to_json_schema
 from gem.command import InvalidCommand, CommandNotFound, CommandExecuter, cmd
@@ -44,14 +48,16 @@ class Assistant:
     def __init__(
         self,
         model: str,
+        helper_model: str,
         name: str = "Assistant",
         tools: list[Callable] = [],
         system_instruction: str = "",
     ) -> None:
         self.model = model
+        self.helper_model = helper_model
         self.name = name
         self.system_instruction = system_instruction
-        self.messages = []
+        self.messages: list[dict] = []
         self.available_functions = {func.__name__: func for func in tools}
         self.tools = list(map(function_to_json_schema, tools))
 
@@ -72,6 +78,14 @@ class Assistant:
             Markdown(msg.strip() if msg else ""), end="", soft_wrap=True, no_wrap=False
         )
         print(f"{Fore.YELLOW}└{'─' * 58}┘{Style.RESET_ALL}")
+
+    def print_log(self, msg: str, msg_type: str):
+        color_sym = {
+            "warn": ("[!]", Fore.YELLOW),
+            "error": ("☒", Fore.RED),
+            "success": ("🗹", Fore.GREEN),
+        }.get(msg_type.lower(), Fore.WHITE)
+        print(f"{color_sym[1]}{color_sym[0]} {msg} {Style.RESET_ALL}")
 
     def get_completion(self):
         """Get a completion from the model with the current messages and tools."""
@@ -98,6 +112,59 @@ class Assistant:
                 "content": str(content),
             }
         )
+
+    @cmd(["messages"], "Print all the chat messages as JSON")
+    def print_json_msgs(self):
+        json_msgs = []
+        for i in self.messages:
+            if isinstance(i, BaseModel):
+                json_msgs.append(i.model_dump())
+            else:
+                json_msgs.append(i)
+        self.console.print_json(data=json_msgs)
+
+    @cmd(["compress"], "Summerizes chat data into single chat entry to free up context")
+    def compress(self):
+        if len(self.messages) < 2:
+            self.print_log("Not enough messages to compress", "warn")
+            return
+
+        with Halo(text="Compressing", spinner='dots') as halo:
+            all_text = []
+            for i in self.messages:
+                if i["role"] != "system" and i["content"] is not None:
+                    all_text.append(f"{i['role']}: {i['content']}")
+
+            prompt = "Make a comprehensive but concise summery of the above conversation, include any links with the summery that you might think are important and dont for others, do not add any other text other than the summery."
+            msgs = [
+                {"role": "system", "content": "You are a Summerizer AI"},
+                {"role": "user", "content": prompt + "\n" + "\n".join(all_text)},
+            ]
+            response = litellm.completion(
+                model=self.helper_model,
+                messages=msgs,
+                temperature=0.15,
+                stream=False,
+                safety_settings=conf.SAFETY_SETTINGS
+            )
+            msg = response.choices[0].message
+            if not msg:
+                halo.clear()
+                self.print_log("Failed to generate summery", "error")
+                return
+
+            halo.clear()
+            sys_prompt = None
+            if len(self.messages) > 0 and self.messages[0]["role"] == "system":
+                sys_prompt = self.messages[0]
+            
+            self.messages = [
+                sys_prompt,
+                {"role": "user", "content": "Summery of our previous conversation: " + str(msg.content)}
+            ]
+            
+            self.print_log("Sucessfully compressed conversation", "success")
+
 
     @cmd(["save"], "Saves the current chat session to pickle file.")
     def save_session(self, name: str, filepath=f"chats"):
@@ -275,12 +342,16 @@ if __name__ == "__main__":
     ).strip()
 
     assistant = Assistant(
-        model=conf.MODEL, system_instruction=sys_instruct, tools=TOOLS
+        model=conf.MODEL, helper_model=conf.HELPER_MODEL, system_instruction=sys_instruct, tools=TOOLS
     )
 
     # handle commands
     command = gem.CommandExecuter.register_commands(
-        gem.builtin_commands.COMMANDS + [assistant.save_session, assistant.load_session, assistant.reset_session]
+        gem.builtin_commands.COMMANDS + [
+            assistant.save_session, assistant.load_session, 
+            assistant.reset_session, assistant.compress,
+            assistant.print_json_msgs
+        ]
     )
     COMMAND_PREFIX = "/"
     # set command prefix (default is /)
