@@ -15,7 +15,7 @@ import requests
 # Not every model supports tool calling so some might throw errors
 # Here you can find all the supported provider: https://docs.litellm.ai/docs/providers/
 
-MODEL = "gemini/gemini-2.0-flash"
+MODEL = "gemini/gemini-2.5-flash-preview-05-20"
 
 # The assistants name
 NAME = "Gemini"

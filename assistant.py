@@ -1,3 +1,12 @@
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    module="pydantic.*",
+    message=r".*(serializer|serialization).*"
+)
+
 import inspect
 import json
 import os
